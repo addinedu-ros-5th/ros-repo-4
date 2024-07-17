@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>845</width>
+    <height>626</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Dialog</string>
+  </property>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>380</x>
+     <y>10</y>
+     <width>131</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>재고 관리</string>
+   </property>
+  </widget>
+  <widget class="QGroupBox" name="groupBox">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>130</y>
+     <width>800</width>
+     <height>460</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>입고</string>
+   </property>
+   <widget class="QPushButton" name="pushButton_2">
+    <property name="geometry">
+     <rect>
+      <x>650</x>
+      <y>30</y>
+      <width>89</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>등록</string>
+    </property>
+   </widget>
+   <widget class="QTableWidget" name="tableWidget">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>70</y>
+      <width>741</width>
+      <height>381</height>
+     </rect>
+    </property>
+    <column>
+     <property name="text">
+      <string>주문번호</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>제품명</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>수량</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>수령자</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>수령일</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>상태</string>
+     </property>
+    </column>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="groupBox_2">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>130</y>
+     <width>800</width>
+     <height>460</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>발주</string>
+   </property>
+   <widget class="QTableWidget" name="tableWidget_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>140</y>
+      <width>741</width>
+      <height>311</height>
+     </rect>
+    </property>
+    <column>
+     <property name="text">
+      <string>주문번호</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>제품명</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>수량</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>수령자</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>수령일</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>상태</string>
+     </property>
+    </column>
+   </widget>
+   <widget class="QSplitter" name="splitter">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>40</y>
+      <width>711</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+    <widget class="QLabel" name="label_2">
+     <property name="text">
+      <string>제품명</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="lineEdit"/>
+    <widget class="QLabel" name="label_3">
+     <property name="text">
+      <string>수량</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="lineEdit_2"/>
+    <widget class="QLabel" name="label_6">
+     <property name="text">
+      <string>배송위치</string>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="comboBox"/>
+    <widget class="QLabel" name="label_7">
+     <property name="text">
+      <string>주문자</string>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="comboBox_3"/>
+    <widget class="QLabel" name="label_12">
+     <property name="text">
+      <string>수령일</string>
+     </property>
+    </widget>
+    <widget class="QDateEdit" name="dateEdit">
+     <property name="displayFormat">
+      <string>yyyymmdd</string>
+     </property>
+     <property name="calendarPopup">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_5">
+     <property name="text">
+      <string>검색</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QSplitter" name="splitter_2">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>70</y>
+      <width>741</width>
+      <height>61</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+    <widget class="QTableWidget" name="tableWidget_3">
+     <column>
+      <property name="text">
+       <string>주문번호</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>제품명</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>남은재고</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>가격</string>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>상태</string>
+      </property>
+     </column>
+    </widget>
+    <widget class="QPushButton" name="pushButton_3">
+     <property name="text">
+      <string>발주</string>
+     </property>
+    </widget>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="groupBox_3">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>130</y>
+     <width>800</width>
+     <height>460</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>재고검색</string>
+   </property>
+   <widget class="QTableWidget" name="tableWidget_4">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>140</y>
+      <width>741</width>
+      <height>311</height>
+     </rect>
+    </property>
+    <column>
+     <property name="text">
+      <string>제품번호</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>제품명</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>재고 수량</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>수령자</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>수령일</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>상태</string>
+     </property>
+    </column>
+   </widget>
+   <widget class="QComboBox" name="comboBox_4">
+    <property name="geometry">
+     <rect>
+      <x>40</x>
+      <y>60</y>
+      <width>86</width>
+      <height>25</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineEdit_7">
+    <property name="geometry">
+     <rect>
+      <x>150</x>
+      <y>60</y>
+      <width>471</width>
+      <height>25</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_6">
+    <property name="geometry">
+     <rect>
+      <x>640</x>
+      <y>60</y>
+      <width>89</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>검색</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QPushButton" name="mainButton">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>89</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>메인으로</string>
+   </property>
+  </widget>
+  <widget class="QSplitter" name="splitter_3">
+   <property name="geometry">
+    <rect>
+     <x>580</x>
+     <y>80</y>
+     <width>240</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+   <widget class="QPushButton" name="restockButton">
+    <property name="text">
+     <string>입고</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="placeOrderButton">
+    <property name="text">
+     <string>발주</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="searchButton">
+    <property name="text">
+     <string>제품 검색</string>
+    </property>
+   </widget>
+  </widget>
+  <zorder>label</zorder>
+  <zorder>groupBox_3</zorder>
+  <zorder>mainButton</zorder>
+  <zorder>splitter_3</zorder>
+  <zorder>groupBox</zorder>
+  <zorder>groupBox_2</zorder>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
