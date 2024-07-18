@@ -222,9 +222,12 @@ class RobotStateWindow(QtWidgets.QDialog):
         self.close()
 
 class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self, username=''):
+    
+    def __init__(self, node, username=''):
         super(MainWindow, self).__init__()
-        # UI 파일 로드
+
+        self.node = node
+        self.inbound_management_active = False  # 입고처리관리 플래그
 
         ui_file = os.path.join(get_package_share_directory('main_server_gui'), 'ui', 'window2.ui')
         print(f"Loading UI file from: {ui_file}")  # 디버깅 출력
@@ -252,11 +255,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.schedule_timer.timeout.connect(self.check_schedule)
         self.schedule_timer.start(1000)  # 1초마다 스케줄 체크(바꿔야하나?)
        
-    
-        self.node = rclpy.create_node('gui_client_node')
-        self.client = self.node.create_client(GenerateOrder, 'generate_order')
-
-
     def toggleClock(self):
         if self.startButton.text() == 'Start':
             self.startClock()
@@ -284,54 +282,41 @@ class MainWindow(QtWidgets.QMainWindow):
             self.request_inbound_list()
 
     def request_inbound_list(self):
-        while not self.client.wait_for_service(timeout_sec=1.0):
-            self.node.get_logger().info('service not available, waiting again...')
-        
-        request = GenerateOrder.Request()
-        self.node.get_logger().info(f'Sending request: {request}')  # 요청 데이터 출력
-        future = self.client.call_async(request)
-        future.add_done_callback(self.inbound_list_callback)
+        self.node.get_logger().info('Requesting inbound list')
+        self.node.request_inbound_list()
 
-    def inbound_list_callback(self, future):
-        try:
-            response = future.result()
-            self.node.get_logger().info(f'Received response: {response}')  # 응답 데이터 출력
-            inbound_list = [{
-                "item_id": response.item_ids[i],
-                "name": response.names[i],
-                "quantity": response.quantities[i],
-                "warehouse": response.warehouses[i],
-                "rack": response.racks[i],
-                "cell": response.cells[i],
-                "status": response.statuses[i]
-            } for i in range(len(response.item_ids))]
-            self.node.get_logger().info(f'Parsed inbound list: {inbound_list}')  # 파싱된 데이터 출력
-            # self.update_inbound_list(inbound_list)
-        except Exception as e:
-            self.node.get_logger().error(f'Service call failed: {e}')
+    def display_inbound_list(self, inbound_list):
+        self.update_inbound_list(inbound_list)
+        if self.inbound_management_active:
+            self.show_inbound_management()
 
+    def update_inbound_list(self, inbound_list):
 
-    # def update_inbound_list(self, inbound_list):
-
-    #     db_instance = get_mysql_connection()
-    #     if db_instance:
-    #         try:
-    #             # 기존 데이터 삭제
-    #             delete_query = "DELETE FROM Inbound_manager"
-    #             db_instance.cursor.execute(delete_query)
+        db_instance = get_mysql_connection()
+        if db_instance:
+            try:
+                # 외래 키 제약 조건 비활성화
+                db_instance.cursor.execute("SET FOREIGN_KEY_CHECKS=0")
                 
-    #             # 새로운 데이터 삽입
-    #             for idx, item in enumerate(inbound_list, start=1):
-    #                 insert_query = ("INSERT INTO Inbound_manager (Purchase_Number, Product_Code, Product_Name, Warehouse, Rack, Cell, Receiving_Quantity, Status) "
-    #                                 "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)")
-    #                 data = (idx, item['item_id'], item['name'], item['warehouse'], item['rack'], item['cell'], item['quantity'], item['status'])
-    #                 db_instance.cursor.execute(insert_query, data)
+                # 기존 데이터 삭제
+                delete_query = "DELETE FROM Inbound_Manager"
+                db_instance.cursor.execute(delete_query)
                 
-    #             db_instance.conn.commit()
-    #             db_instance.disConnection()
-    #         except con.Error as err:
-    #             print(f"Error: {err}")
-    #             db_instance.disConnection()
+                # 외래 키 제약 조건 다시 활성화
+                db_instance.cursor.execute("SET FOREIGN_KEY_CHECKS=1")
+
+                # 새로운 데이터 삽입
+                for idx, item in enumerate(inbound_list, start=1):
+                    insert_query = ("INSERT INTO Inbound_Manager (No, Product_Code, Product_Name, Warehouse, Rack, Cell, Receiving_Quantity, Status) "
+                                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)")
+                    data = (idx, item['item_id'], item['name'], item['warehouse'], item['rack'], item['cell'], item['quantity'], item['status'])
+                    db_instance.cursor.execute(insert_query, data)
+                
+                db_instance.conn.commit()
+                db_instance.disConnection()
+            except con.Error as err:
+                print(f"Error: {err}")
+                db_instance.disConnection()
 
     def handle_tree_item_click(self, item, column):
         if not self.username:
@@ -345,16 +330,30 @@ class MainWindow(QtWidgets.QMainWindow):
             self.statusButton.hide()
             if item.text(0) == '재고 관리':
                 self.show_inventory_management()
+                self.inbound_management_active = False
+
             elif item.text(0) == '창고별 재고현황':
                 self.show_warehouse_status()
+                self.inbound_management_active = False
+
             elif item.text(0) == '입고처리관리':
                 self.show_inbound_management()
                 self.statusButton.show()
+                self.inbound_management_active = True
+
             elif item.text(0) == '출고처리관리':
                 self.show_outbound_management()
                 self.statusButton.show()
+                self.inbound_management_active = False
+
             elif item.text(0) == "관제 및 로봇 상태 관리":
+<<<<<<< HEAD
                 self.show_robotstate_management() 
+=======
+                self.open_robot_state_window() 
+                self.inbound_management_active = False
+
+>>>>>>> 4dcbe76ffa8981ca674453b76d844e1758edc290
         else:
             self.statusButton.hide()
             grandparent = parent.parent()
@@ -410,7 +409,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if root.text(0) == '창고별 재고현황':
             return 'rack_manager'
         elif root.text(0) == '입고처리관리':
-            return 'Inbound_manager'
+            return 'Inbound_Manager'
         elif root.text(0) == '출고처리관리':
             return 'Outbound_manager'
         return None
@@ -419,7 +418,7 @@ class MainWindow(QtWidgets.QMainWindow):
         db_instance = get_mysql_connection()
         if db_instance:
             try:
-                db_instance.cursor.execute("SELECT * FROM Inbound_manager")
+                db_instance.cursor.execute("SELECT * FROM Inbound_Manager")
                 data = db_instance.cursor.fetchall()
                 db_instance.disConnection()
                 return data
@@ -481,9 +480,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
         data = self.fetch_inbound_table_data()
         if data:
-            self.populate_table_widget(data, 'Inbound_manager')
+            self.populate_table_widget(data, 'Inbound_Manager')
         else:
-            QtWidgets.QMessageBox.warning(self, 'Error', 'No data found in Inbound_manager')
+            QtWidgets.QMessageBox.warning(self, 'Error', 'No data found in Inbound_Manager')
 
     def show_outbound_management(self):
         if not self.username:
@@ -502,21 +501,24 @@ class MainWindow(QtWidgets.QMainWindow):
         self.robot_state_window.show()
         self.close()
 
-class GUINode(Node):
-    def __init__(self):
-        super().__init__('gui_node')
-        # self.publisher_ = self.create_publisher(String, 'order_list', 10)
-        
-        self.app = QApplication([])
-        self.window = MainWindow()
+class InboundNode(Node):
+    def __init__(self,app):
+        super().__init__('inbound_node')
+        self.client = self.create_client(GenerateOrder, 'generate_order')
+        while not self.client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('Service not available, waiting again...')
+
+        self.get_logger().info('Service available, ready to send request.')
+
+        self.app = app
+        self.window = MainWindow(self)
         self.window.show()
 
-        # PyQt 애플리케이션 종료 시 rclpy도 종료
         self.app.aboutToQuit.connect(self.shutdown_ros)
-    
+
     def run(self):
         self.app.exec_()
-    
+
     def shutdown_ros(self):
         print("Shutting down ROS...")
         rclpy.shutdown()
@@ -524,26 +526,66 @@ class GUINode(Node):
     def close_gui(self):
         self.window.close()
 
+    def request_inbound_list(self):
+        if not self.client:
+            self.get_logger().error('Client not initialized')
+            return
+
+        request = GenerateOrder.Request()
+        # request 필드를 설정
+
+        try:
+            future = self.client.call_async(request)
+            future.add_done_callback(self.inbound_list_callback)
+            self.get_logger().info('Async request sent')
+        except Exception as e:
+            self.get_logger().error(f'Failed to send async request: {e}')
+
+    def inbound_list_callback(self, future):
+        self.get_logger().info('inbound_list_callback called')
+        try:
+            response = future.result()
+            self.get_logger().info(f'Received response: {response}')
+            inbound_list = [{
+                "item_id": response.item_ids[i],
+                "name": response.names[i],
+                "quantity": response.quantities[i],
+                "warehouse": response.warehouses[i],
+                "rack": response.racks[i],
+                "cell": response.cells[i],
+                "status": response.statuses[i]
+            } for i in range(len(response.item_ids))]
+            self.get_logger().info(f'Parsed inbound list: {inbound_list}')
+            self.window.display_inbound_list(inbound_list)
+        except Exception as e:
+            self.get_logger().error(f'Service call failed: {e}')
+
 def main(args=None):
     rclpy.init(args=args)
-    gui_node = GUINode()
+    
+    app = QApplication([])
+    inbound_node = InboundNode(app)
 
     # rclpy 스핀을 별도의 스레드에서 실행
     def ros_spin():
         try:
-            rclpy.spin(gui_node)
+            rclpy.spin(inbound_node)
+            # 추가 노드들을 rclpy.spin에 등록
+            # e.g., rclpy.spin(another_node)
         except KeyboardInterrupt:
             print("Keyboard interrupt received, shutting down.")
-            gui_node.destroy_node()
+            inbound_node.destroy_node()
+            # 추가 노드들을 정리
+            # e.g., another_node.destroy_node()
             rclpy.shutdown()
-            # PyQt 애플리케이션 종료
-            gui_node.close_gui()
-            gui_node.app.quit()
+            inbound_node.close_gui()
+            app.quit()
 
     ros_spin_thread = threading.Thread(target=ros_spin)
     ros_spin_thread.start()
 
-    gui_node.app.exec_()
+    app.exec_()# Qt 이벤트 루프를 시작
+
 
     # Ensure ROS is shut down when the PyQt application exits
     if rclpy.ok():
