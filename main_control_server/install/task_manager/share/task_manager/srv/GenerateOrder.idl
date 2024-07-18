@@ -1,0 +1,27 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from task_manager/srv/GenerateOrder.srv
+// generated code does not contain a copyright notice
+
+
+module task_manager {
+  module srv {
+    struct GenerateOrder_Request {
+      uint8 structure_needs_at_least_one_member;
+    };
+    struct GenerateOrder_Response {
+      sequence<string> item_ids;
+
+      sequence<string> names;
+
+      sequence<int32> quantities;
+
+      sequence<string> warehouses;
+
+      sequence<string> racks;
+
+      sequence<string> cells;
+
+      sequence<string> statuses;
+    };
+  };
+};

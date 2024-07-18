@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="newPrefix">
+    <file>center.pgm</file>
+  </qresource>
+</RCC>

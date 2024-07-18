@@ -9,6 +9,7 @@ from PyQt5.QtCore import QTimer, QTime, Qt
 from connect import Connect
 import mysql.connector as con
 
+import yaml
 import threading
 import rclpy
 import os
@@ -18,9 +19,14 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from ament_index_python.packages import get_package_share_directory
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(current_dir, '../../../task_manager/share'))
+
 from task_manager.srv import GenerateOrder
+# 이미지 바꿀 때마다 실행   
+import resources_rc     #  pyrcc5 resources.qrc -o resources_rc.py
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(current_dir)  # 현재 디렉토리를 모듈 경로에 추가
+sys.path.append(os.path.join(current_dir, '../../../task_manager/share'))
 
 
 def get_mysql_connection():
@@ -120,7 +126,101 @@ class SigninWindow(QtWidgets.QDialog):
     def go_to_main(self):
         self.main_window.show()
         self.close()
+
+class UpdateRobotState():
+    def __init__(self, db_instance):
+        self.cursor = db_instance.cursor
+
+    # 데이터베이스에서 테이블 정보를 가져오는 함수 정의
+    def fetchImageDataQuery(self, query):
+        self.cursor.execute(query)
+        return self.cursor.fetchall()
+
+    def loadDataFromDB(self, query):
+        image_data = self.fetchImageDataQuery(query)
+        print(image_data)
+        print('(((((((((((((((((((())))))))))))))))))))')
+
+class RobotStateWindow(QtWidgets.QDialog):
+    def __init__(self, main_window):
+        super(RobotStateWindow, self).__init__()
+        ui_file = os.path.join(get_package_share_directory('main_server_gui'), 'ui', 'robot_state.ui')
+        uic.loadUi(ui_file, self)
+
+        db_instance = get_mysql_connection()
+        self.main_window = main_window
+        self.update_robot_state = UpdateRobotState(db_instance)
+        #self.update_robot_state = UpdateRobotState()
+        
+        self.mainButton_2.clicked.connect(self.go_to_main)
+        self.Setup()
+        #self.Main()
     
+    # def Main(self):
+    #     # Case 1.
+    #     query_A = "SELECT id, name, state, battery_level, last_updated FROM Robot_State WHERE name = 'Robot_A'"
+    #     self.update_robot_state.loadDataFromDB(query_A)
+
+    #     # Case 2.
+    #     query_B = "SELECT id, name, state, battery_level, last_updated FROM Robot_State WHERE name = 'Robot_B'"
+    #     self.update_robot_state.loadDataFromDB(query_B)
+
+    def Setup(self):
+        # 지도 관련 함수 및 파라미터
+
+        #self.init_map()
+        
+        #self.map_timer = QTimer(self)
+        #self.map_timer.timeout.connect(self.update_map)
+        #self.map_timer.start(200)
+
+        # 시계 타이머 관련 위젯
+        self.timer = QTimer(self)
+        self.timer.setInterval(1000)    # 1초 간격    
+        self.timer.timeout.connect(self.Showtime)
+        self.lcdTimer.display('')
+        self.lcdTimer.setDigitCount(8)
+        self.timer.start()
+
+        
+    # def init_map(self):
+
+
+        #self.update_map()
+
+    # def update_map(self):
+    #     self.scaled_pixmap = self.pixmap.scaled(int(self.map.width() * self.image_scale), int(self.map.height() * self.image_scale), Qt.KeepAspectRatio)
+    #     painter = QPainter(self.scaled_pixmap)
+
+    #     # 로봇 번호 표시
+    #     self.font = QFont()
+    #     self.font.setBold(True)
+    #     self.font.setPointSize(13)
+    #     painter.setFont(self.font)
+
+    #     # 1번 로봇 좌표
+    #     #self.draw_robot(painter, amcl_1, Qt.red, '1')
+
+    #     # 2번 로봇 좌표
+    #     # self.draw_robot(painter, amcl_2, Qt.blue, '2')
+        
+    #     # # 3번 로봇 좌표
+    #     # self.draw_robot(painter, amcl_3, Qt.green, '3')
+    #     painter.end()
+
+    #     self.map.setPixmap(self.scaled_pixmap)
+
+    def Showtime(self):
+        # 시간
+        sender = self.sender()
+        currentTime = QTime.currentTime().toString("hh:mm:ss")
+        if id(sender) == id(self.timer):
+            self.lcdTimer.display(currentTime)
+
+    def go_to_main(self):
+        self.main_window.show()
+        self.close()
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, username=''):
         super(MainWindow, self).__init__()
@@ -137,7 +237,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.statusButton.clicked.connect(self.update_status)
         self.update_ui_for_logged_in_user()
         # self.statusButton.hide()
-        # self.robot_state_window = None      # RobotStateWindow 인스턴스 저장용 변수
+        self.robot_state_window = None      # RobotStateWindow 인스턴스 저장용 변수
 
         # Start 버튼 및 QTimeEdit 초기화
         self.startButton.clicked.connect(self.toggleClock)
@@ -233,7 +333,6 @@ class MainWindow(QtWidgets.QMainWindow):
     #             print(f"Error: {err}")
     #             db_instance.disConnection()
 
-
     def handle_tree_item_click(self, item, column):
         if not self.username:
             QtWidgets.QMessageBox.warning(self, 'Error', '로그인 후에 진행해 주세요.')
@@ -255,7 +354,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.show_outbound_management()
                 self.statusButton.show()
             elif item.text(0) == "관제 및 로봇 상태 관리":
-                self.open_robot_state_window() 
+                self.show_robotstate_management() 
         else:
             self.statusButton.hide()
             grandparent = parent.parent()
@@ -329,7 +428,6 @@ class MainWindow(QtWidgets.QMainWindow):
                 db_instance.disConnection()
                 return None
             
-    
     def populate_table_widget(self, data, table_name):
         # Clear the tableWidget
         self.tableWidget.setRowCount(0)
@@ -367,6 +465,15 @@ class MainWindow(QtWidgets.QMainWindow):
                 db_instance.disConnection()
                 return None
 
+    def show_inventory_management(self):
+        # Load and show the inventory management screen
+        pass
+
+    def show_warehouse_status(self):
+        if not self.username:
+            QtWidgets.QMessageBox.warning(self, 'Error', '로그인 후에 진행해 주세요.')
+            return
+        
     def show_inbound_management(self):
         if not self.username:
             QtWidgets.QMessageBox.warning(self, 'Error', '로그인 후에 진행해 주세요.')
@@ -378,6 +485,22 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             QtWidgets.QMessageBox.warning(self, 'Error', 'No data found in Inbound_manager')
 
+    def show_outbound_management(self):
+        if not self.username:
+            QtWidgets.QMessageBox.warning(self, 'Error', '로그인 후에 진행해 주세요.')
+            return
+
+        data = self.fetch_outbound_table_data()
+        if data:
+            self.populate_table_widget(data, 'Outbound_manager')
+        else:
+            QtWidgets.QMessageBox.warning(self, 'Error', 'No data found in Outbound_manager')
+
+    def show_robotstate_management(self):
+        if self.robot_state_window is None:
+            self.robot_state_window = RobotStateWindow(self)
+        self.robot_state_window.show()
+        self.close()
 
 class GUINode(Node):
     def __init__(self):
