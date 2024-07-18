@@ -41,6 +41,8 @@ class SigninWindow(QtWidgets.QDialog):
         self.groupBox.setVisible(True)
         self.groupBox_2.setVisible(False)
 
+        self.update_ui_for_logged_in_user()
+
     def toggle_radio_buttons(self):
         if self.radioButton_1.isChecked():
             self.groupBox.setVisible(True)
