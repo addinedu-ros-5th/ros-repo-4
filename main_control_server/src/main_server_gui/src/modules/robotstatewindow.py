@@ -4,7 +4,9 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import QTimer, QTime, Qt
-from modules.connect import Connect
+
+from modules.connect import *
+
 import mysql.connector as con
 import os
 import yaml
@@ -153,3 +155,7 @@ class RobotStateWindow(QtWidgets.QDialog):
     def go_to_main(self):
         self.main_window.show()
         self.close()
+
+    def update_amcl_pose(self, amcl_pose):
+        print("Received AMCL Pose in RobotStateWindow:", amcl_pose)
+        #우선 합니다~
