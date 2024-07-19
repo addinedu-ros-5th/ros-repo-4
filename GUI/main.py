@@ -1,28 +1,7 @@
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from Connect import Connect
-#from db_test import *
-import mysql.connector as con
+import mysql.connector
 import sys
 
-db_instance = Connect("team4", "0444")
-
-def get_mysql_connection():
-    try:
-        conn = con.connect(
-            host="database-1.cdsoiiswk6c2.ap-northeast-2.rds.amazonaws.com",
-            port=3306,
-            user="root",
-            password="k60746074",
-            database="final_project"
-        )
-        return conn
-    except con.Error as err:
-        print(f"Error: {err}")
-        return None
-    
 class SigninWindow(QtWidgets.QDialog):
     def __init__(self, main_window):
         super(SigninWindow, self).__init__()
@@ -40,8 +19,6 @@ class SigninWindow(QtWidgets.QDialog):
         self.radioButton_1.setChecked(True)
         self.groupBox.setVisible(True)
         self.groupBox_2.setVisible(False)
-
-        self.update_ui_for_logged_in_user()
 
     def toggle_radio_buttons(self):
         if self.radioButton_1.isChecked():
@@ -80,7 +57,7 @@ class SigninWindow(QtWidgets.QDialog):
 
     def save_user(self, name, user_id, password):
         try:
-            conn = con.connect(
+            conn = mysql.connector.connect(
                 host="database-1.cdsoiiswk6c2.ap-northeast-2.rds.amazonaws.com",
                 port=3306,
                 user="root",
@@ -92,13 +69,13 @@ class SigninWindow(QtWidgets.QDialog):
             conn.commit()
             conn.close()
             return True
-        except con.Error as err:
+        except mysql.connector.Error as err:
             print(f"Error: {err}")
             return False
 
     def authenticate_user(self, user_id, password):
         try:
-            conn = con.connect(
+            conn = mysql.connector.connect(
                 host="database-1.cdsoiiswk6c2.ap-northeast-2.rds.amazonaws.com",
                 port=3306,
                 user="root",
@@ -110,7 +87,7 @@ class SigninWindow(QtWidgets.QDialog):
             user = cursor.fetchone()
             conn.close()
             return user
-        except con.Error as err:
+        except mysql.connector.Error as err:
             print(f"Error: {err}")
             return None
 
@@ -118,64 +95,19 @@ class SigninWindow(QtWidgets.QDialog):
         self.main_window.show()
         self.close()
 
-class UpdateRobotState():
-    def __init__(self, db_instance):
-        self.cursor = db_instance.cursor
-
-    # 데이터베이스에서 테이블 정보를 가져오는 함수 정의
-    def fetchImageDataQuery(self, query):
-        self.cursor.execute(query)
-        return self.cursor.fetchall()
-
-    def loadDataFromDB(self, query):
-        image_data = self.fetchImageDataQuery(query)
-        print(image_data)
-        print('(((((((((((((((((((())))))))))))))))))))')
-
-class RobotStateWindow(QtWidgets.QDialog):
-    def __init__(self, main_window):
-        super(RobotStateWindow, self).__init__()
-        uic.loadUi('robot_state.ui', self)
-
-        self.main_window = main_window
-        self.update_robot_state = UpdateRobotState(db_instance)
-        
-        self.mainButton_2.clicked.connect(self.go_to_main)
-        self.Setup()
-        self.Main()
-    
-    def Main(self):
-        # Case 1.
-        query_A = "SELECT id, name, state, battery_level, last_updated FROM Robot_State WHERE name = 'Robot_A'"
-        self.update_robot_state.loadDataFromDB(query_A)
-
-        # Case 2.
-        query_B = "SELECT id, name, state, battery_level, last_updated FROM Robot_State WHERE name = 'Robot_B'"
-        self.update_robot_state.loadDataFromDB(query_B)
-
-    def Setup(self):
-        # DB 관련 파라미터
-        self.case_num = 0 
-        self.person_num = 0
-
-        # 시계 타이머 관련 위젯
-        self.timer = QTimer(self)
-        self.timer.setInterval(1000)    # 1초 간격    
-        self.timer.timeout.connect(self.Showtime)
-        self.lcdTimer.display('')
-        self.lcdTimer.setDigitCount(8)
-        self.timer.start()
-
-    def Showtime(self):
-        # 시간
-        sender = self.sender()
-        currentTime = QTime.currentTime().toString("hh:mm:ss")
-        if id(sender) == id(self.timer):
-            self.lcdTimer.display(currentTime)
-
-    def go_to_main(self):
-        self.main_window.show()
-        self.close()
+def get_mysql_connection():
+    try:
+        conn = mysql.connector.connect(
+            host="database-1.cdsoiiswk6c2.ap-northeast-2.rds.amazonaws.com",
+            port=3306,
+            user="root",
+            password="k60746074",
+            database="final_project"
+        )
+        return conn
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        return None
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, username=''):
@@ -188,7 +120,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusButton.clicked.connect(self.update_status)
         self.update_ui_for_logged_in_user()
         self.statusButton.hide()
-        self.robot_state_window = None      # RobotStateWindow 인스턴스 저장용 변수
 
     def handle_logout(self):
         self.username = ''
@@ -225,8 +156,6 @@ class MainWindow(QtWidgets.QMainWindow):
             elif item.text(0) == '출고처리관리':
                 self.show_outbound_management()
                 self.statusButton.show()
-            elif item.text(0) == "관제 및 로봇 상태 관리":
-                self.open_robot_state_window() 
         else:
             self.statusButton.hide()
             grandparent = parent.parent()
@@ -235,15 +164,9 @@ class MainWindow(QtWidgets.QMainWindow):
             else:
                 great_grandparent = grandparent.parent()
                 if great_grandparent is None:
-                    self.show_filtered_by_self.robot_state_windowwarehouse_and_rack(parent.text(0), item.text(0), table_name)
+                    self.show_filtered_by_warehouse_and_rack(parent.text(0), item.text(0), table_name)
                 else:
                     self.show_filtered_by_warehouse_rack_and_cell(grandparent.text(0), parent.text(0), item.text(0), table_name)
-
-    def open_robot_state_window(self):
-        if self.robot_state_window is None:
-            self.robot_state_window = RobotStateWindow(self)
-        self.robot_state_window.show()
-        self.close()
 
     def get_table_name(self, item):
         root = item
@@ -270,7 +193,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 data = cursor.fetchall()
                 conn.close()
                 return data
-            except con.Error as err:
+            except mysql.connector.Error as err:
                 print(f"Error: {err}")
                 return None
 
@@ -294,7 +217,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 data = cursor.fetchall()
                 conn.close()
                 return data
-            except con.Error as err:
+            except mysql.connector.Error as err:
                 print(f"Error: {err}")
                 return None
 
@@ -362,7 +285,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 data = cursor.fetchall()
                 conn.close()
                 return data
-            except con.Error as err:
+            except mysql.connector.Error as err:
                 print(f"Error: {err}")
                 return None
 
@@ -375,7 +298,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 data = cursor.fetchall()
                 conn.close()
                 return data
-            except con.Error as err:
+            except mysql.connector.Error as err:
                 print(f"Error: {err}")
                 return None
 
@@ -388,7 +311,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 data = cursor.fetchall()
                 conn.close()
                 return data
-            except con.Error as err:
+            except mysql.connector.Error as err:
                 print(f"Error: {err}")
                 return None
 
@@ -401,7 +324,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 data = cursor.fetchall()
                 conn.close()
                 return data
-            except con.Error as err:
+            except mysql.connector.Error as err:
                 print(f"Error: {err}")
                 return None
 
@@ -437,7 +360,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 columns = cursor.fetchall()
                 conn.close()
                 return columns
-            except con.Error as err:
+            except mysql.connector.Error as err:
                 print(f"Error: {err}")
                 return []
 
@@ -479,7 +402,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 cursor.execute(f"UPDATE {table_name} SET Status = %s WHERE idx = %s", (new_status, item_id))
                 conn.commit()
                 conn.close()
-            except con.Error as err:
+            except mysql.connector.Error as err:
                 print(f"Error: {err}")
                 QtWidgets.QMessageBox.warning(self, 'Error', '데이터베이스 업데이트 중 오류가 발생했습니다.')
 
@@ -500,11 +423,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.signinButton.show()
 
 if __name__ == '__main__':
-
     app = QtWidgets.QApplication(sys.argv)
     main_window = MainWindow()
     main_window.show()
+    sys.exit(app.exec())
 
-    app.exec()
-    db_instance.disConnection()
-    
