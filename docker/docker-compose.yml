@@ -1,0 +1,7 @@
+version: '3'
+services:
+  ros2_yolov5:
+    build: .
+    volumes:
+      - ./ai_server:/ros2_ws/src/ai_server
+    network_mode: host
