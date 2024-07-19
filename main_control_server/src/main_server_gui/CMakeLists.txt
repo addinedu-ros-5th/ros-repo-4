@@ -16,6 +16,8 @@ install(
   PROGRAMS src/gui_node.py
   PROGRAMS src/main_server_gui.py
   PROGRAMS src/connect.py
+  PROGRAMS src/robotstatewindow.py
+  PROGRAMS src/signinwindow.py
 
   DESTINATION lib/${PROJECT_NAME}
   PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ

@@ -14,15 +14,20 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 from task_manager.srv import GenerateOrder
+from geometry_msgs.msg import PoseWithCovarianceStamped 
 
 from ament_index_python.packages import get_package_share_directory
 
-from robotstatewindow import *
-from signinwindow import *
+# 이미지 바꿀 때마다 실행   
+#import resources_rc     #  pyrcc5 resources.qrc -o resources_rc.py  
+
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)  # 현재 디렉토리를 모듈 경로에 추가
 sys.path.append(os.path.join(current_dir, '../../../task_manager/share'))
+
+global amcl_1
+amcl_1 = PoseWithCovarianceStamped()
 
 # 지도 load
 map_yaml_file = os.path.join(get_package_share_directory('main_server_gui'), 'map', 'main.yaml')
@@ -34,6 +39,235 @@ def get_mysql_connection():
     except con.Error as err:
         print(f"Error: {err}")
         return None
+
+# class SigninWindow(QtWidgets.QDialog):
+#     def __init__(self, main_window):
+#         super(SigninWindow, self).__init__()
+#         ui_file = os.path.join(get_package_share_directory('main_server_gui'), 'ui', 'signin.ui')
+#         print(f"Loading UI file from: {ui_file}")  # 디버깅 출력
+#         uic.loadUi(ui_file, self)
+        
+#         self.main_window = main_window
+        
+#         self.loginButton.clicked.connect(self.handle_login)
+#         self.signupButton.clicked.connect(self.handle_signup)
+#         self.mainButton_l.clicked.connect(self.go_to_main)
+        
+#         self.radioButton_1.toggled.connect(self.toggle_radio_buttons)
+#         self.radioButton_2.toggled.connect(self.toggle_radio_buttons)
+        
+#         self.radioButton_1.setChecked(True)
+#         self.groupBox.setVisible(True)
+#         self.groupBox_2.setVisible(False)
+
+
+#     def toggle_radio_buttons(self):
+#         if self.radioButton_1.isChecked():
+#             self.groupBox.setVisible(True)
+#             self.groupBox_2.setVisible(False)
+#         else:
+#             self.groupBox.setVisible(False)
+#             self.groupBox_2.setVisible(True)
+
+#     def handle_signup(self):
+#         name = self.usernameEdit_2.text()
+#         user_id = self.passwordEdit_2.text()
+#         password = self.passwordEdit_3.text()
+        
+#         if not name or not user_id or not password:
+#             QtWidgets.QMessageBox.warning(self, 'Error', 'All fields are required')
+#             return
+        
+#         if self.save_user(name, user_id, password):
+#             QtWidgets.QMessageBox.information(self, 'Success', 'User created successfully')
+#         else:
+#             QtWidgets.QMessageBox.warning(self, 'Error', 'User creation failed')
+    
+#     def handle_login(self):
+#         user_id = self.usernameEdit.text()
+#         password = self.passwordEdit.text()
+        
+#         user = self.authenticate_user(user_id, password)
+#         if user:
+#             self.main_window.username = user[0]  # Assuming user[0] is the name
+#             self.main_window.update_ui_for_logged_in_user()
+#             self.main_window.show()
+#             self.close()
+#         else:
+#             QtWidgets.QMessageBox.warning(self, 'Error', 'Invalid username or password')
+
+#     def save_user(self, name, user_id, password):
+#         db_instance = get_mysql_connection()
+#         if db_instance:
+#             try:
+#                 db_instance.cursor.execute("INSERT INTO user_manager (name, ID, password) VALUES (%s, %s, %s)", (name, user_id, password))
+#                 db_instance.conn.commit()
+#                 db_instance.disConnection()
+#                 return True
+#             except con.Error as err:
+#                 print(f"Error: {err}")
+#                 db_instance.disConnection()
+#                 return False
+#         else:
+#             return False
+
+#     def authenticate_user(self, user_id, password):
+#         db_instance = get_mysql_connection()
+#         if db_instance:
+#             try:
+#                 db_instance.cursor.execute("SELECT name FROM user_manager WHERE ID = %s AND password = %s", (user_id, password))
+#                 user = db_instance.cursor.fetchone()
+#                 db_instance.disConnection()
+#                 return user
+#             except con.Error as err:
+#                 print(f"Error: {err}")
+#                 db_instance.disConnection()
+#                 return None
+#         else:
+#             return None
+
+#     def go_to_main(self):
+#         self.main_window.show()
+#         self.close()
+
+class AmclSubscriber(Node):
+    def __init__(self):
+        super().__init__('amcl_subscriber')
+
+        self.pose1_sub = self.create_subscription(PoseWithCovarianceStamped, 'amcl_pose', self.amcl_callback1, 10)
+
+    def amcl_callback1(self, amcl):
+        global amcl_1
+        amcl_1 = amcl
+        print(amcl_1)
+        print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+
+
+# class UpdateRobotState():
+#     def __init__(self, db_instance):
+#         self.cursor = db_instance.cursor
+
+#     # 데이터베이스에서 테이블 정보를 가져오는 함수 정의
+#     def fetchImageDataQuery(self, query):
+#         self.cursor.execute(query)
+#         return self.cursor.fetchall()
+
+#     def loadDataFromDB(self, query):
+#         image_data = self.fetchImageDataQuery(query)
+#         print(image_data)
+#         print('(((((((((((((((((((())))))))))))))))))))')
+
+# class RobotStateWindow(QtWidgets.QDialog):
+#     def __init__(self, main_window):
+#         super(RobotStateWindow, self).__init__()
+#         ui_file = os.path.join(get_package_share_directory('main_server_gui'), 'ui', 'robot_state.ui')
+#         uic.loadUi(ui_file, self)
+
+#         db_instance = get_mysql_connection()
+#         self.main_window = main_window
+#         self.update_robot_state = UpdateRobotState(db_instance)
+        
+#         self.mainButton_2.clicked.connect(self.go_to_main)
+#         self.Setup()
+#         #self.Main()
+    
+#     # def Main(self):
+#     #     # Case 1.
+#     #     query_A = "SELECT id, name, state, battery_level, last_updated FROM Robot_State WHERE name = 'Robot_A'"
+#     #     self.update_robot_state.loadDataFromDB(query_A)
+
+#     #     # Case 2.
+#     #     query_B = "SELECT id, name, state, battery_level, last_updated FROM Robot_State WHERE name = 'Robot_B'"
+#     #     self.update_robot_state.loadDataFromDB(query_B)
+
+#     def Setup(self):
+#         # 지도 관련 함수 및 파라미터
+#         self.find_map_label()
+#         self.init_map()
+
+#         self.map_timer = QTimer(self)
+#         self.map_timer.timeout.connect(self.update_map)
+#         self.map_timer.start(200)
+
+#         # # 시계 타이머 관련 위젯
+#         # self.timer = QTimer(self)
+#         # self.timer.setInterval(1000)    # 1초 간격    
+#         # self.timer.timeout.connect(self.Showtime)
+#         # self.lcdTimer.display('')
+#         # self.lcdTimer.setDigitCount(8)
+#         # self.timer.start()
+    
+#     def init_map(self):
+#         with open(map_yaml_file) as f:
+#             self.map_yaml_data = yaml.full_load(f)        
+
+#         print(self.map.width(), self.map.height())        # 485, 448
+#         print('-----------------------------')
+
+#         self.image_scale = 1
+#         self.pixmap = QPixmap(os.path.join(get_package_share_directory('main_server_gui'), 'map', self.map_yaml_data['image']))
+#         self.scaled_pixmap = self.pixmap.scaled(int(self.map.width() * self.image_scale), int(self.map.height() * self.image_scale), Qt.KeepAspectRatioByExpanding)#Qt.KeepAspectRatio)
+        
+#         self.height = self.pixmap.size().height()
+#         self.width = self.pixmap.size().width()
+
+#         print(self.scaled_pixmap.size())                    # PyQt5.QtCore.QSize(485, 448) = (width, height)
+#         print(self.width, self.height)                      # 105 97
+#         print('-----------------------------')
+
+#         self.map_resolution = self.map_yaml_data['resolution']
+#         self.map_origin = self.map_yaml_data['origin'][:2]
+#         self.update_map()
+
+#     def update_map(self):
+#         self.scaled_pixmap = self.pixmap.scaled(int(self.map.width() * self.image_scale), int(self.map.height() * self.image_scale), Qt.KeepAspectRatioByExpanding)#Qt.KeepAspectRatio)
+#         painter = QPainter(self.scaled_pixmap)
+
+#         # 로봇 번호 표시
+#         self.font = QFont()
+#         self.font.setBold(True)
+#         self.font.setPointSize(13)
+#         painter.setFont(self.font)
+
+#         # 1번 로봇 좌표
+#         self.draw_robot(painter, amcl_1, Qt.red, '1')
+
+#         painter.end()
+#         self.map.setPixmap(self.scaled_pixmap)
+
+#     def draw_robot(self, painter, amcl, color, label):
+#         x, y = self.calc_grid_position(amcl.pose.pose.position.x, amcl.pose.pose.position.y)
+#         # x, y = self.calc_grid_position(0.0, 0.0) # test용
+#         painter.setPen(QPen(color, 13, Qt.SolidLine))
+#         painter.drawPoint(int((self.width - x) * self.image_scale), int(y * self.image_scale))
+#         painter.drawText(int((self.width - x) * self.image_scale - 30), int(y * self.image_scale + 5), label)
+
+#     def calc_grid_position(self, x, y):
+#         x_offset = -85
+#         y_offset = 85
+#         x_grid = x_offset + ((x * 3.2 - self.map_origin[0]) / 0.05 )
+#         y_grid = y_offset + ((y * 3.0 - self.map_origin[1]) / 0.05 )
+
+#         return x_grid, y_grid
+    
+#     def find_map_label(self):
+#         self.map_label = self.findChild(QtWidgets.QLabel, 'map')
+#         if self.map_label:
+#             print('QLabel "map" found.')
+#         else:
+#             print('QLabel "map" not found.')    
+
+#     def Showtime(self):
+#         # 시간
+#         sender = self.sender()
+#         currentTime = QTime.currentTime().toString("hh:mm:ss")
+#         if id(sender) == id(self.timer):
+#             self.lcdTimer.display(currentTime)
+
+#     def go_to_main(self):
+#         self.main_window.show()
+#         self.close()
+
 
 class MainWindow(QtWidgets.QMainWindow):
     
@@ -54,9 +288,7 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.statusButton.clicked.connect(self.update_status)
         self.update_ui_for_logged_in_user()
         # self.statusButton.hide()
-
-        # 각종 창 인스턴스 변수
-        self.robot_state_window = None      
+        self.robot_state_window = None      # RobotStateWindow 인스턴스 저장용 변수
 
         # Start 버튼 및 QTimeEdit 초기화
         self.startButton.clicked.connect(self.toggleClock)
