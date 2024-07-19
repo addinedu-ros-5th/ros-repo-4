@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import QTimer, QTime, Qt
-from connect import Connect
+
 import mysql.connector as con
 import yaml
 import threading
@@ -17,12 +17,10 @@ from task_manager.srv import GenerateOrder
 
 from ament_index_python.packages import get_package_share_directory
 
-from robotstatewindow import *
-from signinwindow import *
+from modules.connect import Connect
+from modules.robotstatewindow import *
+from modules.signinwindow import *
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(current_dir)  # 현재 디렉토리를 모듈 경로에 추가
-sys.path.append(os.path.join(current_dir, '../../../task_manager/share'))
 
 # 지도 load
 map_yaml_file = os.path.join(get_package_share_directory('main_server_gui'), 'map', 'main.yaml')
@@ -370,39 +368,17 @@ class InboundNode(Node):
         except Exception as e:
             self.get_logger().error(f'Service call failed: {e}')
 
-#def main(args=None):
-    # rclpy.init(args=args)
-    
-    # app = QApplication([])
-    # inbound_node = InboundNode(app)
-    # amcl_node = AmclSubscriber()
+class AmclSubscriber(Node):
+    def __init__(self):
+        super().__init__('amcl_subscriber')
 
-    # # rclpy 스핀을 별도의 스레드에서 실행
-    # def ros_spin():
-    #     try:
-    #         rclpy.spin(inbound_node)
-    #         rclpy.spin(amcl_node)
-    #         # 추가 노드들을 rclpy.spin에 등록
-    #         # e.g., rclpy.spin(another_node)
-    #     except KeyboardInterrupt:
-    #         print("Keyboard interrupt received, shutting down.")
-    #         inbound_node.destroy_node()
-    #         amcl_node.destroy_node()
-    #         # 추가 노드들을 정리
-    #         # e.g., another_node.destroy_node()
-    #         rclpy.shutdown()
-    #         inbound_node.close_gui()
-    #         app.quit()
+        self.pose1_sub = self.create_subscription(PoseWithCovarianceStamped, 'amcl_pose', self.amcl_callback1, 10)
 
-    # ros_spin_thread = threading.Thread(target=ros_spin)
-    # ros_spin_thread.start()
-
-    # app.exec_()# Qt 이벤트 루프를 시작
-
-    # # Ensure ROS is shut down when the PyQt application exits
-    # if rclpy.ok():
-    #     rclpy.shutdown()
-    # ros_spin_thread.join()
+    def amcl_callback1(self, amcl):
+        global amcl_1
+        amcl_1 = amcl
+        print(amcl_1)
+        print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
 
 def main(args=None):
     rclpy.init(args=args)
