@@ -1,0 +1,2 @@
+# InspectionStart.msg
+string signal

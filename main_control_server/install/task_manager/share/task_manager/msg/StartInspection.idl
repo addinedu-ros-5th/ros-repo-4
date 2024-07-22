@@ -1,0 +1,14 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from task_manager/msg/StartInspection.msg
+// generated code does not contain a copyright notice
+
+
+module task_manager {
+  module msg {
+    @verbatim (language="comment", text=
+      "InspectionStart.msg")
+    struct StartInspection {
+      string signal;
+    };
+  };
+};

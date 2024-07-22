@@ -17,6 +17,9 @@ class MainWindow(QtWidgets.QMainWindow):
     #8시 알려라~ node에~
     schedule_signal = pyqtSignal()  # 8시가 되었음을 알리는 신호
 
+
+    db_update_signal = pyqtSignal(str)  # DB 업데이트 완료요~
+
     def __init__(self, username=''):
         super(MainWindow, self).__init__()
         self.inbound_management_active = False
@@ -97,9 +100,12 @@ class MainWindow(QtWidgets.QMainWindow):
                     db_instance.cursor.execute(insert_query, data)
                 db_instance.conn.commit()
                 db_instance.disConnection()
+
+                self.db_update_signal.emit("DB Update Completed")
             except con.Error as err:
                 print(f"Error: {err}")
                 db_instance.disConnection()
+
 
     def handle_tree_item_click(self, item, column):
         if not self.username:

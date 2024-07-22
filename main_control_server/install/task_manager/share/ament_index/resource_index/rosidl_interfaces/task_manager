@@ -1,3 +1,7 @@
+msg/DbUpdate.idl
+msg/DbUpdate.msg
+msg/StartInspection.idl
+msg/StartInspection.msg
 srv/GenerateOrder.idl
 srv/GenerateOrder.srv
 srv/GenerateOrder_Request.msg

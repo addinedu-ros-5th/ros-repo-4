@@ -15,6 +15,8 @@ find_package(rosidl_default_generators REQUIRED)
 # Add the service files
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/GenerateOrder.srv"
+  "msg/DbUpdate.msg"
+  "msg/StartInspection.msg"
 )
 install(
   DIRECTORY launch

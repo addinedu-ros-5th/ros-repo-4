@@ -2,6 +2,8 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 from task_manager.srv import GenerateOrder
+from task_manager.msg import DbUpdate
+
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import pyqtSlot
@@ -18,12 +20,13 @@ class InboundNode(Node):
             self.get_logger().info('Service not available, waiting again...')
         self.get_logger().info('Service available, ready to send request.')
 
+        self.publisher = self.create_publisher(DbUpdate, 'db_update_status', 10)
+
         self.main_window = main_window
 
         # 8시가 되면은 종이 울린다~
         self.main_window.schedule_signal.connect(self.request_inbound_list)
-    
-
+        self.main_window.db_update_signal.connect(self.notify_db_update_complete)  # GUI에서 신호 연결
 
 
     def request_inbound_list(self):
@@ -58,6 +61,14 @@ class InboundNode(Node):
             self.main_window.inbound_list_signal.emit(inbound_list)
         except Exception as e:
             self.get_logger().error(f'Service call failed: {e}')
+
+    def notify_db_update_complete(self, status_message):
+        msg = DbUpdate()
+        msg.status = status_message
+        self.publisher.publish(msg)
+        self.get_logger().info('Published DB update status')
+
+    
 
 
 class AmclSubscriber(Node):
