@@ -26,6 +26,13 @@ install(
               WORLD_EXECUTE WORLD_READ
 )
 
+# Install Python modules
+install(
+  DIRECTORY src/modules
+  DESTINATION lib/${PROJECT_NAME}
+  FILES_MATCHING PATTERN "*.py"
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   set(ament_cmake_cpplint_FOUND TRUE)

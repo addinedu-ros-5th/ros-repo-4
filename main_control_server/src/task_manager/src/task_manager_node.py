@@ -42,11 +42,14 @@ class OrderListService(Node):
     def db_update_callback(self, msg):
         self.get_logger().info(f'Received DB update status: {msg.status}')
         if msg.status == "DB Update Completed" and not self.inspection_started:
+            self.inspection_started = True
             self.send_signal_start_inspection_to_mfc("Start Inspection")
             
 
+            
+
     def send_signal_start_inspection_to_mfc(self, signal_message):
-        self.inspection_started = True  # 신호 전송 후 플래그 설정
+        self.inspection_started = False  # 신호 전송 후 플래그 설정
         msg = StartInspection()
         msg.signal = signal_message
         self.publisher.publish(msg)
