@@ -6,6 +6,10 @@ msg/InspectionComplete.idl
 msg/InspectionComplete.msg
 msg/StartInspection.idl
 msg/StartInspection.msg
+srv/AllocatorTask.idl
+srv/AllocatorTask.srv
+srv/AllocatorTask_Request.msg
+srv/AllocatorTask_Response.msg
 srv/GenerateOrder.idl
 srv/GenerateOrder.srv
 srv/GenerateOrder_Request.msg

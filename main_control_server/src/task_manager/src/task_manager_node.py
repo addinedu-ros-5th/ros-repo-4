@@ -5,7 +5,7 @@ from rclpy.node import Node
 from order_list import OrderList  
 from task_manager.msg import DbUpdate, GuiUpdate
 from task_manager.msg import StartInspection, InspectionComplete
-from task_manager.srv import GenerateOrder
+from task_manager.srv import GenerateOrder, AllocatorTask
 import sqlite3
 import mysql.connector as con
 
@@ -33,6 +33,13 @@ class OrderListService(Node):
             10)
         
         self.publisher_update_gui = self.create_publisher(GuiUpdate, 'gui_update', 10)
+
+        self.task_allocator_client = self.create_client(AllocatorTask, 'allocate_task')
+        while not self.task_allocator_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('allocate_task service not available, waiting again...')
+        self.get_logger().info('allocate_task service available.')
+
+
 
     def generate_order_callback(self, request, response):
         random_items = self.order_list_node.get_random_order_list()  # 랜덤 주문 리스트 생성
@@ -99,9 +106,9 @@ class OrderListService(Node):
         self.get_logger().info(f'Inspection complete for product: {msg.product_code}')
         self.update_status_in_db(msg.product_code, '검수완료')
         self.send_update_signal_to_gui(msg.product_code,'검수완료')
+        self.send_task_allocation_request(msg.product_code,"입고")
 
-
-
+        
     def update_status_in_db(self, product_code, status):
         db_connection = Connect("team4", "0444")
         cursor = db_connection.cursor
@@ -118,6 +125,26 @@ class OrderListService(Node):
         msg.message = f"Product {product_code} status updated to {status}"
         self.publisher_update_gui.publish(msg)
         self.get_logger().info(f'Sent GUI update signal for product {product_code} with status {status}')
+
+
+    def send_task_allocation_request(self, product_code,task_type):
+        request = AllocatorTask.Request()
+        request.product_code = product_code
+        request.task_type = task_type
+        self.future = self.task_allocator_client.call_async(request)
+        self.get_logger().info(f'Sending task allocation request for product_code: {product_code} with task_type: {task_type}')
+        self.future.add_done_callback(self.handle_task_allocation_response)
+
+    
+    def handle_task_allocation_response(self, future):
+        try:
+            response = future.result()
+            self.get_logger().info(f'Robot Name: {response.robot_name}')
+            self.get_logger().info(f'Goal Location: {response.goal_location}')
+            self.get_logger().info(f'Task Assignment: {response.task_assignment}')
+        except Exception as e:
+            self.get_logger().error(f'Service call failed: {e}')
+
 
 class Connect():
     def __init__(self, User, Password):

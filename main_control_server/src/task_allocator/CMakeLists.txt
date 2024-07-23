@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(task_manager)
+project(task_allocator)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -7,33 +7,28 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(rclpy REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(task_manager REQUIRED)
 
-# Add the service files
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "srv/GenerateOrder.srv"
-  "srv/AllocatorTask.srv"
-  "msg/DbUpdate.msg"
-  "msg/StartInspection.msg"
-  "msg/InspectionComplete.msg"
-  "msg/GuiUpdate.msg"
-)
+# Install Python scripts with executable permissions
 install(
-  DIRECTORY launch
-  DESTINATION share/${PROJECT_NAME}
-)
-
-install(
-  PROGRAMS src/task_manager_node.py
-  PROGRAMS src/order_list.py
+  PROGRAMS src/task_allocator_node.py
   DESTINATION lib/${PROJECT_NAME}
   PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
               GROUP_EXECUTE GROUP_READ
               WORLD_EXECUTE WORLD_READ
 )
+
+# Install Python modules
+install(
+  DIRECTORY src/data
+  DESTINATION lib/${PROJECT_NAME}
+  FILES_MATCHING PATTERN "*.py"
+)
+
+
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights

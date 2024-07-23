@@ -8,7 +8,8 @@ from modules.esp32_master import ESP32Master
 import sqlite3
 import socket
 import threading
-
+import os
+import signal
 
 class MFCNetworkManager(Node):
     def __init__(self):
@@ -32,6 +33,9 @@ class MFCNetworkManager(Node):
         self.esp32_master.send_signal(f'START_INSPECTION:{msg.product_code}')
 
     def receive_inspection_server(self):
+        self.check_and_close_existing_socket('192.168.0.89', 12345)
+
+
         receive_inspection_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         receive_inspection_server_socket.bind(('192.168.0.89', 12345))  # 서버 IP와 포트 설정 ifconfig러 확인하기
         receive_inspection_server_socket.listen(5)
@@ -52,6 +56,20 @@ class MFCNetworkManager(Node):
         msg = InspectionComplete()
         msg.product_code = product_code
         self.inspection_complete_publisher.publish(msg)
+
+
+    def check_and_close_existing_socket(self, host, port):
+        # netstat 명령어를 사용하여 포트 사용 여부 확인
+        cmd = f"lsof -i tcp:{port} -sTCP:LISTEN"
+        result = os.popen(cmd).read()
+        if result:
+            # 포트를 사용하는 프로세스가 있으면 해당 프로세스 종료
+            for line in result.splitlines():
+                if 'python' in line:
+                    pid = int(line.split()[1])
+                    os.kill(pid, signal.SIGKILL)
+                    self.get_logger().info(f'Killed process {pid} using port {port}')
+
 
     
 
