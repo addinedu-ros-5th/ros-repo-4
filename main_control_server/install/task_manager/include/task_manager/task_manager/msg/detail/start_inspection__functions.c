@@ -12,7 +12,8 @@
 
 
 // Include directives for member types
-// Member `signal`
+// Member `product_code`
+// Member `product_name`
 #include "rosidl_runtime_c/string_functions.h"
 
 bool
@@ -21,8 +22,13 @@ task_manager__msg__StartInspection__init(task_manager__msg__StartInspection * ms
   if (!msg) {
     return false;
   }
-  // signal
-  if (!rosidl_runtime_c__String__init(&msg->signal)) {
+  // product_code
+  if (!rosidl_runtime_c__String__init(&msg->product_code)) {
+    task_manager__msg__StartInspection__fini(msg);
+    return false;
+  }
+  // product_name
+  if (!rosidl_runtime_c__String__init(&msg->product_name)) {
     task_manager__msg__StartInspection__fini(msg);
     return false;
   }
@@ -35,8 +41,10 @@ task_manager__msg__StartInspection__fini(task_manager__msg__StartInspection * ms
   if (!msg) {
     return;
   }
-  // signal
-  rosidl_runtime_c__String__fini(&msg->signal);
+  // product_code
+  rosidl_runtime_c__String__fini(&msg->product_code);
+  // product_name
+  rosidl_runtime_c__String__fini(&msg->product_name);
 }
 
 bool
@@ -45,9 +53,15 @@ task_manager__msg__StartInspection__are_equal(const task_manager__msg__StartInsp
   if (!lhs || !rhs) {
     return false;
   }
-  // signal
+  // product_code
   if (!rosidl_runtime_c__String__are_equal(
-      &(lhs->signal), &(rhs->signal)))
+      &(lhs->product_code), &(rhs->product_code)))
+  {
+    return false;
+  }
+  // product_name
+  if (!rosidl_runtime_c__String__are_equal(
+      &(lhs->product_name), &(rhs->product_name)))
   {
     return false;
   }
@@ -62,9 +76,15 @@ task_manager__msg__StartInspection__copy(
   if (!input || !output) {
     return false;
   }
-  // signal
+  // product_code
   if (!rosidl_runtime_c__String__copy(
-      &(input->signal), &(output->signal)))
+      &(input->product_code), &(output->product_code)))
+  {
+    return false;
+  }
+  // product_name
+  if (!rosidl_runtime_c__String__copy(
+      &(input->product_name), &(output->product_name)))
   {
     return false;
   }

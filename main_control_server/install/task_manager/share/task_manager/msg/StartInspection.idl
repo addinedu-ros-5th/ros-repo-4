@@ -8,7 +8,9 @@ module task_manager {
     @verbatim (language="comment", text=
       "InspectionStart.msg")
     struct StartInspection {
-      string signal;
+      string product_code;
+
+      string product_name;
     };
   };
 };

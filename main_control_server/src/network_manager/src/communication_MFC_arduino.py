@@ -18,16 +18,16 @@ class MFCNetworkManager(Node):
             self.start_inspection_callback,
             10)
         
-        self.esp32_master = ESP32Master('192.168.0.9', 80) # 시리얼 통신 클래스 인스턴스 생성
+        self.esp32_master = ESP32Master('192.168.0.12', 80) # 시리얼 통신 클래스 인스턴스 생성
 
 
     def start_inspection_callback(self, msg):
-        self.get_logger().info(f'Received start inspection signal: {msg.signal}')
-        self.esp32_master.send_signal('START_INSPECTION')
+        self.get_logger().info(f'Received start inspection signal for {msg.product_code}:{msg.product_name}')
+        self.esp32_master.send_signal(f'START_INSPECTION:{msg.product_code}')
     
 
     def destroy_node(self):
-        self.arduino.close()
+        self.esp32_master.close()
         super().destroy_node()
 
 

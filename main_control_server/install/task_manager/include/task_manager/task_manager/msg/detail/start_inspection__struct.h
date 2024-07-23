@@ -18,7 +18,8 @@ extern "C"
 // Constants defined in the message
 
 // Include directives for member types
-// Member 'signal'
+// Member 'product_code'
+// Member 'product_name'
 #include "rosidl_runtime_c/string.h"
 
 /// Struct defined in msg/StartInspection in the package task_manager.
@@ -27,7 +28,8 @@ extern "C"
  */
 typedef struct task_manager__msg__StartInspection
 {
-  rosidl_runtime_c__String signal;
+  rosidl_runtime_c__String product_code;
+  rosidl_runtime_c__String product_name;
 } task_manager__msg__StartInspection;
 
 // Struct for a sequence of task_manager__msg__StartInspection.

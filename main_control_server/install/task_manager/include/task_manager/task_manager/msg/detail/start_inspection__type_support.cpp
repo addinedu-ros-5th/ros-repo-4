@@ -37,16 +37,33 @@ void StartInspection_fini_function(void * message_memory)
   typed_message->~StartInspection();
 }
 
-static const ::rosidl_typesupport_introspection_cpp::MessageMember StartInspection_message_member_array[1] = {
+static const ::rosidl_typesupport_introspection_cpp::MessageMember StartInspection_message_member_array[2] = {
   {
-    "signal",  // name
+    "product_code",  // name
     ::rosidl_typesupport_introspection_cpp::ROS_TYPE_STRING,  // type
     0,  // upper bound of string
     nullptr,  // members of sub message
     false,  // is array
     0,  // array size
     false,  // is upper bound
-    offsetof(task_manager::msg::StartInspection, signal),  // bytes offset in struct
+    offsetof(task_manager::msg::StartInspection, product_code),  // bytes offset in struct
+    nullptr,  // default value
+    nullptr,  // size() function pointer
+    nullptr,  // get_const(index) function pointer
+    nullptr,  // get(index) function pointer
+    nullptr,  // fetch(index, &value) function pointer
+    nullptr,  // assign(index, value) function pointer
+    nullptr  // resize(index) function pointer
+  },
+  {
+    "product_name",  // name
+    ::rosidl_typesupport_introspection_cpp::ROS_TYPE_STRING,  // type
+    0,  // upper bound of string
+    nullptr,  // members of sub message
+    false,  // is array
+    0,  // array size
+    false,  // is upper bound
+    offsetof(task_manager::msg::StartInspection, product_name),  // bytes offset in struct
     nullptr,  // default value
     nullptr,  // size() function pointer
     nullptr,  // get_const(index) function pointer
@@ -60,7 +77,7 @@ static const ::rosidl_typesupport_introspection_cpp::MessageMember StartInspecti
 static const ::rosidl_typesupport_introspection_cpp::MessageMembers StartInspection_message_members = {
   "task_manager::msg",  // message namespace
   "StartInspection",  // message name
-  1,  // number of fields
+  2,  // number of fields
   sizeof(task_manager::msg::StartInspection),
   StartInspection_message_member_array,  // message members
   StartInspection_init_function,  // function to initialize message memory (memory has to be allocated)

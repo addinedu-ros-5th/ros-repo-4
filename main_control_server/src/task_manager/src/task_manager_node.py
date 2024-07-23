@@ -2,10 +2,12 @@
 
 import rclpy
 from rclpy.node import Node
-from order_list import OrderList  # 임포트 추가
+from order_list import OrderList  
 from task_manager.msg import DbUpdate 
 from task_manager.msg import StartInspection
 from task_manager.srv import GenerateOrder
+import sqlite3
+import mysql.connector as con
 
 class OrderListService(Node):
     def __init__(self):
@@ -13,6 +15,7 @@ class OrderListService(Node):
         self.srv = self.create_service(GenerateOrder, 'generate_order', self.generate_order_callback)
         self.order_list_node = OrderList()
         self.inspection_started = False  # 플래그 변수 초기화
+        self.inspection_index = 0  # 검수 진행 중인 아이템 인덱스
 
         self.subscription = self.create_subscription(
             DbUpdate,
@@ -21,7 +24,7 @@ class OrderListService(Node):
             10)
         self.subscription 
 
-        self.publisher = self.create_publisher(StartInspection, 'mfc_start_inspection', 10)
+        self.publisher_start_inspection = self.create_publisher(StartInspection, 'mfc_start_inspection', 10)
 
     def generate_order_callback(self, request, response):
         random_items = self.order_list_node.get_random_order_list()  # 랜덤 주문 리스트 생성
@@ -43,17 +46,63 @@ class OrderListService(Node):
         self.get_logger().info(f'Received DB update status: {msg.status}')
         if msg.status == "DB Update Completed" and not self.inspection_started:
             self.inspection_started = True
-            self.send_signal_start_inspection_to_mfc("Start Inspection")
+            self.get_first_item_from_db()
             
 
             
 
-    def send_signal_start_inspection_to_mfc(self, signal_message):
+    def send_signal_start_inspection_to_mfc(self, product):
         self.inspection_started = False  # 신호 전송 후 플래그 설정
         msg = StartInspection()
-        msg.signal = signal_message
-        self.publisher.publish(msg)
-        self.get_logger().info('Sending inspection start signal.')
+        msg.product_code = product["Product_Code"]
+        msg.product_name = product["Product_Name"]
+        self.publisher_start_inspection.publish(msg)
+        self.get_logger().info(f'Sending inspection start signal for {product["Product_Name"]}')
+
+    
+    def get_first_item_from_db(self):
+        # DB에서 첫 번째 항목 가져오기
+        db_connection = Connect("team4", "0444")
+        cursor = db_connection.cursor
+        cursor.execute("SELECT * FROM Inbound_Manager WHERE Status = '입하완료' ORDER BY No LIMIT 1")
+        row = cursor.fetchone()
+        db_connection.disConnection()
+        
+        if row:
+            self.get_logger().info(f"Fetched row from DB: {row}")  # 디버깅을 위해 추가
+            product = {
+                "No": row[0],
+                "Product_Code": row[1],
+                "Product_Name": row[2],
+                "Warehouse": row[3],
+                "Rack": row[4],
+                "Cell": row[5],
+                "Receiving_Quant": row[6],
+                "Status": row[7]
+            }
+            self.get_logger().info(f"First row in Inbound List: {product}")
+            self.send_signal_start_inspection_to_mfc(product)
+        else:
+            self.inspection_started = False
+            self.get_logger().info('No items to inspect.')
+
+
+class Connect():
+    def __init__(self, User, Password):
+        self.conn = con.connect(
+            host='database-1.cdigc6umyoh0.ap-northeast-2.rds.amazonaws.com',
+            user=User,
+            password=Password,
+            database='DFC_system_db'
+        )
+        self.cursor = self.conn.cursor(buffered=True)
+
+    def disConnection(self):
+        if self.conn:
+            print('!!!!!!DB SHUT DOWN!!!!!!')
+            self.conn.close()
+            self.cursor.close()
+            self.conn = None
 
 def main(args=None):
     rclpy.init(args=args)

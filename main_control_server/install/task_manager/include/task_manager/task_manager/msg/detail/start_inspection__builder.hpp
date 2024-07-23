@@ -21,16 +21,32 @@ namespace msg
 namespace builder
 {
 
-class Init_StartInspection_signal
+class Init_StartInspection_product_name
 {
 public:
-  Init_StartInspection_signal()
+  explicit Init_StartInspection_product_name(::task_manager::msg::StartInspection & msg)
+  : msg_(msg)
+  {}
+  ::task_manager::msg::StartInspection product_name(::task_manager::msg::StartInspection::_product_name_type arg)
+  {
+    msg_.product_name = std::move(arg);
+    return std::move(msg_);
+  }
+
+private:
+  ::task_manager::msg::StartInspection msg_;
+};
+
+class Init_StartInspection_product_code
+{
+public:
+  Init_StartInspection_product_code()
   : msg_(::rosidl_runtime_cpp::MessageInitialization::SKIP)
   {}
-  ::task_manager::msg::StartInspection signal(::task_manager::msg::StartInspection::_signal_type arg)
+  Init_StartInspection_product_name product_code(::task_manager::msg::StartInspection::_product_code_type arg)
   {
-    msg_.signal = std::move(arg);
-    return std::move(msg_);
+    msg_.product_code = std::move(arg);
+    return Init_StartInspection_product_name(msg_);
   }
 
 private:
@@ -48,7 +64,7 @@ template<>
 inline
 auto build<::task_manager::msg::StartInspection>()
 {
-  return task_manager::msg::builder::Init_StartInspection_signal();
+  return task_manager::msg::builder::Init_StartInspection_product_code();
 }
 
 }  // namespace task_manager

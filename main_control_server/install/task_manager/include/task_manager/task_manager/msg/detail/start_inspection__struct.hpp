@@ -38,30 +38,42 @@ struct StartInspection_
     if (rosidl_runtime_cpp::MessageInitialization::ALL == _init ||
       rosidl_runtime_cpp::MessageInitialization::ZERO == _init)
     {
-      this->signal = "";
+      this->product_code = "";
+      this->product_name = "";
     }
   }
 
   explicit StartInspection_(const ContainerAllocator & _alloc, rosidl_runtime_cpp::MessageInitialization _init = rosidl_runtime_cpp::MessageInitialization::ALL)
-  : signal(_alloc)
+  : product_code(_alloc),
+    product_name(_alloc)
   {
     if (rosidl_runtime_cpp::MessageInitialization::ALL == _init ||
       rosidl_runtime_cpp::MessageInitialization::ZERO == _init)
     {
-      this->signal = "";
+      this->product_code = "";
+      this->product_name = "";
     }
   }
 
   // field types and members
-  using _signal_type =
+  using _product_code_type =
     std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>>;
-  _signal_type signal;
+  _product_code_type product_code;
+  using _product_name_type =
+    std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>>;
+  _product_name_type product_name;
 
   // setters for named parameter idiom
-  Type & set__signal(
+  Type & set__product_code(
     const std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>> & _arg)
   {
-    this->signal = _arg;
+    this->product_code = _arg;
+    return *this;
+  }
+  Type & set__product_name(
+    const std::basic_string<char, std::char_traits<char>, typename std::allocator_traits<ContainerAllocator>::template rebind_alloc<char>> & _arg)
+  {
+    this->product_name = _arg;
     return *this;
   }
 
@@ -107,7 +119,10 @@ struct StartInspection_
   // comparison operators
   bool operator==(const StartInspection_ & other) const
   {
-    if (this->signal != other.signal) {
+    if (this->product_code != other.product_code) {
+      return false;
+    }
+    if (this->product_name != other.product_name) {
       return false;
     }
     return true;

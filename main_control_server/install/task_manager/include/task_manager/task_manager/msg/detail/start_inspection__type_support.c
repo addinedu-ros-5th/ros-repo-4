@@ -13,7 +13,8 @@
 
 
 // Include directives for member types
-// Member `signal`
+// Member `product_code`
+// Member `product_name`
 #include "rosidl_runtime_c/string_functions.h"
 
 #ifdef __cplusplus
@@ -35,16 +36,33 @@ void task_manager__msg__StartInspection__rosidl_typesupport_introspection_c__Sta
   task_manager__msg__StartInspection__fini(message_memory);
 }
 
-static rosidl_typesupport_introspection_c__MessageMember task_manager__msg__StartInspection__rosidl_typesupport_introspection_c__StartInspection_message_member_array[1] = {
+static rosidl_typesupport_introspection_c__MessageMember task_manager__msg__StartInspection__rosidl_typesupport_introspection_c__StartInspection_message_member_array[2] = {
   {
-    "signal",  // name
+    "product_code",  // name
     rosidl_typesupport_introspection_c__ROS_TYPE_STRING,  // type
     0,  // upper bound of string
     NULL,  // members of sub message
     false,  // is array
     0,  // array size
     false,  // is upper bound
-    offsetof(task_manager__msg__StartInspection, signal),  // bytes offset in struct
+    offsetof(task_manager__msg__StartInspection, product_code),  // bytes offset in struct
+    NULL,  // default value
+    NULL,  // size() function pointer
+    NULL,  // get_const(index) function pointer
+    NULL,  // get(index) function pointer
+    NULL,  // fetch(index, &value) function pointer
+    NULL,  // assign(index, value) function pointer
+    NULL  // resize(index) function pointer
+  },
+  {
+    "product_name",  // name
+    rosidl_typesupport_introspection_c__ROS_TYPE_STRING,  // type
+    0,  // upper bound of string
+    NULL,  // members of sub message
+    false,  // is array
+    0,  // array size
+    false,  // is upper bound
+    offsetof(task_manager__msg__StartInspection, product_name),  // bytes offset in struct
     NULL,  // default value
     NULL,  // size() function pointer
     NULL,  // get_const(index) function pointer
@@ -58,7 +76,7 @@ static rosidl_typesupport_introspection_c__MessageMember task_manager__msg__Star
 static const rosidl_typesupport_introspection_c__MessageMembers task_manager__msg__StartInspection__rosidl_typesupport_introspection_c__StartInspection_message_members = {
   "task_manager__msg",  // message namespace
   "StartInspection",  // message name
-  1,  // number of fields
+  2,  // number of fields
   sizeof(task_manager__msg__StartInspection),
   task_manager__msg__StartInspection__rosidl_typesupport_introspection_c__StartInspection_message_member_array,  // message members
   task_manager__msg__StartInspection__rosidl_typesupport_introspection_c__StartInspection_init_function,  // function to initialize message memory (memory has to be allocated)

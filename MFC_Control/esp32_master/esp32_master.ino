@@ -9,6 +9,9 @@ const char* password = "addinedu1";
 
 WiFiServer server(80); // TCP 서버 포트 설정
 
+unsigned long previousMillis = 0; // 이전 시간 저장
+const long interval = 1000; // 1초 간격
+
 void setup() {
   Serial.begin(9600);
 
@@ -32,6 +35,11 @@ void setup() {
 }
 
 void loop() {
+  handleClientRequest();
+  checkInspectionComplete();
+}
+
+void handleClientRequest() {
   WiFiClient client = server.available(); // 클라이언트 접속 대기
 
   if (client) {
@@ -40,21 +48,15 @@ void loop() {
       if (client.available()) {
         String request = client.readStringUntil('\n');
         Serial.println("Received request: " + request);
-        if (request == "START_INSPECTION") {
-          Serial.println("Received start inspection signal");
-          sendCommandToArduino(SLAVE1_ADDR, "LED_ON");
-          sendCommandToArduino(SLAVE2_ADDR, "LED_ON");
+        if (request.startsWith("START_INSPECTION:")) {
+          String productCode = request.substring(request.indexOf(':') + 1);
+          Serial.println("Received start inspection signal for product: " + productCode);
+          sendCommandToArduino(SLAVE1_ADDR, "LED_ON:" + productCode);
+          sendCommandToArduino(SLAVE2_ADDR, "LED_ON:" + productCode);
 
-
-          // Wi-Fi로 ESP32 슬레이브 보드에 명령 전송
-          WiFiClient espClient;
-          if (espClient.connect("192.168.0.14", 80)) { // 슬레이브 보드 IP 주소
-            espClient.println("LED_ON");
-            espClient.stop();
-          }
-          
-          client.println("Inspection started");
+          client.println("Inspection started for product: " + productCode);
         }
+        // 다른 요청을 처리하기 위한 조건문을 추가하세요.
       }
     }
     client.stop();
@@ -62,8 +64,40 @@ void loop() {
   }
 }
 
+void checkInspectionComplete() {
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
+
+    // 슬레이브로부터 검사 완료 데이터를 요청
+    requestInspectionComplete(SLAVE1_ADDR);
+    requestInspectionComplete(SLAVE2_ADDR);
+  }
+}
+
 void sendCommandToArduino(uint8_t address, String command) {
   Wire.beginTransmission(address);
-  Wire.write((const uint8_t*)command.c_str(), command.length());
+  Wire.write((const uint8_t*)command.c_str(), command.length() + 1); // null terminator 포함
   Wire.endTransmission();
+}
+
+
+void requestInspectionComplete(uint8_t address) {
+  Wire.requestFrom(address, 33); // null terminator 포함 33 바이트의 데이터를 요청 (예: 최대 메시지 길이)
+  char response[33] = {0}; // 버퍼 초기화
+  int i = 0;
+  while (Wire.available()) {
+    char c = Wire.read();
+    if (i < 32) {
+      response[i++] = c;
+    }
+  }
+  response[i] = '\0'; // null terminator 추가
+
+  String responseStr = String(response);
+  if (responseStr.startsWith("INSPECTION_COMPLETE:")) {
+    String productCode = responseStr.substring(responseStr.indexOf(':') + 1);
+    Serial.println("Inspection completed for product: " + productCode);
+    // 필요한 추가 작업 수행
+  }
 }

@@ -25,10 +25,17 @@ inline void to_flow_style_yaml(
   std::ostream & out)
 {
   out << "{";
-  // member: signal
+  // member: product_code
   {
-    out << "signal: ";
-    rosidl_generator_traits::value_to_yaml(msg.signal, out);
+    out << "product_code: ";
+    rosidl_generator_traits::value_to_yaml(msg.product_code, out);
+    out << ", ";
+  }
+
+  // member: product_name
+  {
+    out << "product_name: ";
+    rosidl_generator_traits::value_to_yaml(msg.product_name, out);
   }
   out << "}";
 }  // NOLINT(readability/fn_size)
@@ -37,13 +44,23 @@ inline void to_block_style_yaml(
   const StartInspection & msg,
   std::ostream & out, size_t indentation = 0)
 {
-  // member: signal
+  // member: product_code
   {
     if (indentation > 0) {
       out << std::string(indentation, ' ');
     }
-    out << "signal: ";
-    rosidl_generator_traits::value_to_yaml(msg.signal, out);
+    out << "product_code: ";
+    rosidl_generator_traits::value_to_yaml(msg.product_code, out);
+    out << "\n";
+  }
+
+  // member: product_name
+  {
+    if (indentation > 0) {
+      out << std::string(indentation, ' ');
+    }
+    out << "product_name: ";
+    rosidl_generator_traits::value_to_yaml(msg.product_name, out);
     out << "\n";
   }
 }  // NOLINT(readability/fn_size)

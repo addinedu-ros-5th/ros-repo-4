@@ -1,2 +1,3 @@
 # InspectionStart.msg
-string signal
+string product_code
+string product_name
