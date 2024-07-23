@@ -3,9 +3,11 @@
 
 import rclpy
 from rclpy.node import Node
-from task_manager.msg import StartInspection
+from task_manager.msg import StartInspection, InspectionComplete
 from modules.esp32_master import ESP32Master
 import sqlite3
+import socket
+import threading
 
 
 class MFCNetworkManager(Node):
@@ -19,11 +21,38 @@ class MFCNetworkManager(Node):
             10)
         
         self.esp32_master = ESP32Master('192.168.0.12', 80) # 시리얼 통신 클래스 인스턴스 생성
+        self.receive_inspection_server_thread = threading.Thread(target=self.receive_inspection_server)
+        self.receive_inspection_server_thread.start()
+
+        self.inspection_complete_publisher = self.create_publisher(InspectionComplete, 'inspection_complete', 10)
 
 
     def start_inspection_callback(self, msg):
         self.get_logger().info(f'Received start inspection signal for {msg.product_code}:{msg.product_name}')
         self.esp32_master.send_signal(f'START_INSPECTION:{msg.product_code}')
+
+    def receive_inspection_server(self):
+        receive_inspection_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        receive_inspection_server_socket.bind(('192.168.0.89', 12345))  # 서버 IP와 포트 설정 ifconfig러 확인하기
+        receive_inspection_server_socket.listen(5)
+        self.get_logger().info('Server listening on port 12345')
+
+        while True:
+            client_socket, addr = receive_inspection_server_socket.accept()
+            self.get_logger().info(f'Connected by {addr}')
+            data = client_socket.recv(1024).decode()
+            self.get_logger().info(f'Received: {data}')
+            if data.startswith("TASK_COMPLETE:"):
+                product_code = data.split(':')[1]
+                self.handle_task_complete(product_code)
+            client_socket.close()
+    
+    def handle_task_complete(self, product_code):
+        self.get_logger().info(f'Task complete for product: {product_code}')
+        msg = InspectionComplete()
+        msg.product_code = product_code
+        self.inspection_complete_publisher.publish(msg)
+
     
 
     def destroy_node(self):

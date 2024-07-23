@@ -14,3 +14,9 @@ class ESP32Master:
                 print(f'Received from ESP32: {response.decode()}')
         except socket.error as e:
             print(f'Error sending signal: {e}')
+
+
+    def close(self):
+        self.sock.close()
+
+        

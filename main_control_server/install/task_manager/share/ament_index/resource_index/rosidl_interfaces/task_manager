@@ -1,5 +1,9 @@
 msg/DbUpdate.idl
 msg/DbUpdate.msg
+msg/GuiUpdate.idl
+msg/GuiUpdate.msg
+msg/InspectionComplete.idl
+msg/InspectionComplete.msg
 msg/StartInspection.idl
 msg/StartInspection.msg
 srv/GenerateOrder.idl

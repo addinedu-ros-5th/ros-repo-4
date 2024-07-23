@@ -1,5 +1,7 @@
 #include <WiFi.h>
 #include <Wire.h>
+#include <WiFiClient.h>
+#include <WiFiServer.h>
 
 const char* ssid = "addinedu_class_2 (2.4G)";
 const char* password = "addinedu1";
@@ -11,6 +13,9 @@ WiFiServer server(80); // TCP 서버 포트 설정
 
 unsigned long previousMillis = 0; // 이전 시간 저장
 const long interval = 1000; // 1초 간격
+
+String MFCNetworkManagerIP = "192.168.0.89"; // network_manager IP 주소
+const uint16_t networkManagerPort = 12345;
 
 void setup() {
   Serial.begin(9600);
@@ -99,5 +104,19 @@ void requestInspectionComplete(uint8_t address) {
     String productCode = responseStr.substring(responseStr.indexOf(':') + 1);
     Serial.println("Inspection completed for product: " + productCode);
     // 필요한 추가 작업 수행
+    notifyNetworkManager(productCode);
+  }
+}
+
+void notifyNetworkManager(const String& productCode) {
+  WiFiClient client;
+  Serial.println("Attempting to connect to network manager...");
+  if (client.connect(MFCNetworkManagerIP.c_str(), networkManagerPort)) {
+    String message = "TASK_COMPLETE:" + productCode;
+    client.print(message);
+    client.stop();
+    Serial.println("Sent task completion to network_manager: " + message);
+  } else {
+    Serial.println("Connection to network_manager failed");
   }
 }

@@ -2,7 +2,7 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 from task_manager.srv import GenerateOrder
-from task_manager.msg import DbUpdate
+from task_manager.msg import DbUpdate, GuiUpdate
 
 
 from PyQt5.QtWidgets import QApplication
@@ -21,6 +21,12 @@ class InboundNode(Node):
         self.get_logger().info('Service available, ready to send request.')
 
         self.publisher = self.create_publisher(DbUpdate, 'db_update_status', 10)
+
+        self.subscription_update = self.create_subscription(
+            GuiUpdate,
+            'gui_update',
+            self.gui_update_callback,
+            10)
 
         self.main_window = main_window
 
@@ -67,6 +73,11 @@ class InboundNode(Node):
         msg.status = status_message
         self.publisher.publish(msg)
         self.get_logger().info('Published DB update status')
+
+    def gui_update_callback(self, msg):
+        self.get_logger().info(f'GUI Update signal received for product {msg.product_code} with status {msg.status}')
+        self.main_window.inbound_status_db_update_signal.emit()
+
 
     
 

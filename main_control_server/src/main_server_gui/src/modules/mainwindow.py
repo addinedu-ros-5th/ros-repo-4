@@ -19,6 +19,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     db_update_signal = pyqtSignal(str)  # DB 업데이트 완료요~
+    inbound_status_db_update_signal = pyqtSignal() 
 
     def __init__(self, username=''):
         super(MainWindow, self).__init__()
@@ -44,6 +45,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         # Signal 연결
         self.inbound_list_signal.connect(self.display_inbound_list)
+        self.inbound_status_db_update_signal.connect(self.show_inbound_management)
 
     
     def get_mysql_connection(self):

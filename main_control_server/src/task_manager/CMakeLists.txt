@@ -17,6 +17,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/GenerateOrder.srv"
   "msg/DbUpdate.msg"
   "msg/StartInspection.msg"
+  "msg/InspectionComplete.msg"
+  "msg/GuiUpdate.msg"
 )
 install(
   DIRECTORY launch
