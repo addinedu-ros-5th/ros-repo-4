@@ -28,7 +28,7 @@ class TaskAllocator(Node):
             self.get_logger().warn(f'No location found for product code {product_code}')
             return f"No location found for product code {product_code}"
         
-        location_pose = pose_dict.get(location_key)
+        location_pose = location_key
 
         if location_pose is None:
             self.get_logger().warn(f'No pose found for location key {location_key}')

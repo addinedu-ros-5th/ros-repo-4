@@ -20,6 +20,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/StartInspection.msg"
   "msg/InspectionComplete.msg"
   "msg/GuiUpdate.msg"
+  "msg/SendAllocationResults.msg"
 )
 install(
   DIRECTORY launch

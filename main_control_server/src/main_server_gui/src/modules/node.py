@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
@@ -8,18 +10,18 @@ from task_manager.msg import DbUpdate, GuiUpdate
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import pyqtSlot
 
-
-from modules.robotstatewindow import *
 from modules.mainwindow import *
 
 class InboundNode(Node):
     def __init__(self, main_window):
         super().__init__('inbound_node')
+        # 'GenerateOrder' 메세지 타입의 서비스 클라이언트
         self.client = self.create_client(GenerateOrder, 'generate_order')
         while not self.client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('Service not available, waiting again...')
         self.get_logger().info('Service available, ready to send request.')
 
+        # 'GenerateOrder' 메세지 타입의 서비스 클라이언트
         self.publisher = self.create_publisher(DbUpdate, 'db_update_status', 10)
 
         self.subscription_update = self.create_subscription(

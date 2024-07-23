@@ -4,7 +4,7 @@ import rclpy
 from rclpy.node import Node
 from order_list import OrderList  
 from task_manager.msg import DbUpdate, GuiUpdate
-from task_manager.msg import StartInspection, InspectionComplete
+from task_manager.msg import StartInspection, InspectionComplete,SendAllocationResults
 from task_manager.srv import GenerateOrder, AllocatorTask
 import sqlite3
 import mysql.connector as con
@@ -32,14 +32,14 @@ class OrderListService(Node):
             self.inspection_complete_callback,
             10)
         
-        self.publisher_update_gui = self.create_publisher(GuiUpdate, 'gui_update', 10)
+        self.publisher_update_gui = self.create_publisher(GuiUpdate, 'gui_update', 10)        
 
         self.task_allocator_client = self.create_client(AllocatorTask, 'allocate_task')
         while not self.task_allocator_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('allocate_task service not available, waiting again...')
         self.get_logger().info('allocate_task service available.')
 
-
+        self.publisher_allocation_results = self.create_publisher(SendAllocationResults, 'send_allocation_results', 10)
 
     def generate_order_callback(self, request, response):
         random_items = self.order_list_node.get_random_order_list()  # 랜덤 주문 리스트 생성
@@ -142,8 +142,19 @@ class OrderListService(Node):
             self.get_logger().info(f'Robot Name: {response.robot_name}')
             self.get_logger().info(f'Goal Location: {response.goal_location}')
             self.get_logger().info(f'Task Assignment: {response.task_assignment}')
+            self.send_task_allocation_results(response.robot_name,response.goal_location,response.task_assignment)
+
         except Exception as e:
             self.get_logger().error(f'Service call failed: {e}')
+
+    def send_task_allocation_results(self, robot_name,goal_location,task_assignment):
+        allocation_msg = SendAllocationResults()
+        allocation_msg.robot_name = robot_name
+        allocation_msg.goal_location = goal_location
+        allocation_msg.task_assignment = task_assignment
+        self.publisher_allocation_results.publish(allocation_msg)
+        
+        self.get_logger().info(f'Published task assignment for robot: {robot_name}')
 
 
 class Connect():
