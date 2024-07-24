@@ -54,7 +54,7 @@ endif()
 add_library(robot_state::robot_state__rosidl_typesupport_cpp SHARED IMPORTED)
 
 set_target_properties(robot_state::robot_state__rosidl_typesupport_cpp PROPERTIES
-  INTERFACE_LINK_LIBRARIES "robot_state::robot_state__rosidl_generator_cpp"
+  INTERFACE_LINK_LIBRARIES "robot_state::robot_state__rosidl_generator_cpp;action_msgs::action_msgs__rosidl_typesupport_cpp;builtin_interfaces::builtin_interfaces__rosidl_typesupport_cpp;unique_identifier_msgs::unique_identifier_msgs__rosidl_typesupport_cpp"
 )
 
 if(CMAKE_VERSION VERSION_LESS 2.8.12)

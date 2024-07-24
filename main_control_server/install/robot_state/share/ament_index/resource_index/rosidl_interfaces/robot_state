@@ -1,3 +1,5 @@
+action/RobotTask.action
+action/RobotTask.idl
 srv/UpdateDB.idl
 srv/UpdateDB.srv
 srv/UpdateDB_Request.msg

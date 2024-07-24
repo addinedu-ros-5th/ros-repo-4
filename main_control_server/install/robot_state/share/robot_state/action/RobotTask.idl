@@ -1,0 +1,32 @@
+// generated from rosidl_adapter/resource/action.idl.em
+// with input from robot_state/action/RobotTask.action
+// generated code does not contain a copyright notice
+
+
+module robot_state {
+  module action {
+    @verbatim (language="comment", text=
+      "Request")
+    struct RobotTask_Goal {
+      float pos_x;
+
+      float pos_y;
+
+      float orientation_z;
+
+      float orientation_w;
+    };
+    @verbatim (language="comment", text=
+      "Response")
+    struct RobotTask_Result {
+      string robot_name;
+
+      string goal_location;
+    };
+    @verbatim (language="comment", text=
+      "Feedback")
+    struct RobotTask_Feedback {
+      float remained_dist;
+    };
+  };
+};
