@@ -6,12 +6,6 @@
 module task_manager {
   module msg {
     struct SendAllocationResults {
-<<<<<<< HEAD
-      string robot_name;
-
-      string goal_location;
-
-=======
       @verbatim (language="comment", text=
         "Robo1")
       string robot_name;
@@ -22,7 +16,6 @@ module task_manager {
 
       @verbatim (language="comment", text=
         "입고")
->>>>>>> 9bf326e1baf8c0a0e415ef9a5918e282fb97eff6
       string task_assignment;
     };
   };

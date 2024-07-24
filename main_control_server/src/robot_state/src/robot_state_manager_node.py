@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-import rclpy as rp
-from rp.node import Node
-from rp.action import ActionServer
+import rclpy
+from rclpy.node import Node
+from rclpy.action import ActionServer
 import math
 import time
 import sys
@@ -9,21 +9,23 @@ import os
 # Connect 클래스 인스턴스 생성
 from modules.connect import *
 # AmclSubscriber 클래스 인스턴스 생성
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../network_manager/lib/network_manager')))
+network_manager_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../network_manager/lib/network_manager'))
+sys.path.append(network_manager_path)
+
+# 경로 출력
+print("Network Manager Path:", network_manager_path)
+print("sys.path:", sys.path)
 from communication_robot_node import AmclSubscriber 
 
 # 서비스 서버.
 from robot_state.srv import UpdateDB
 # 로봇에게 task allocate할 메세지 타입.
 from task_manager.msg import SendAllocationResults
-<<<<<<< HEAD
 from std_msgs.msg import String
-=======
 # 사용자 정의된 로봇(액션 클라이언트)과 액션 통신 메세지 타입.
 from robot_state.action import RobotTask
 
-from rp.executors import MultiThreadedExecutor
->>>>>>> 96233de270818c380ca6186861bd32e9f7b2a54f
+from rclpy.executors import MultiThreadedExecutor
 
 
 def get_mysql_connection():
@@ -96,12 +98,10 @@ class TellTaskManager(Node):
         self.get_logger().info(f'Goal Location: {msg.goal_location}')                    # I1
         self.get_logger().info(f'Task Assignment: {msg.task_assignment}')                # 입고
 
-<<<<<<< HEAD
         pose_command = String()
         pose_command.data = msg.goal_location
         self.publisher_pose_commands.publish(pose_command)
         self.get_logger().info(f'Published pose command: {pose_command.data}')
-=======
         ##############################여기다가 robot_state_manager -> robot으로 robot_name goal_location 전달##############################
         # self.robot_name = msg.robot_name
         # self.goal_location = msg.goal_location
@@ -126,7 +126,6 @@ class TellTaskManager(Node):
 #             'mfc_robot',
 #             self.execute_callback)
         
->>>>>>> 96233de270818c380ca6186861bd32e9f7b2a54f
     
 def main(args=None):
     db_instance = get_mysql_connection()
@@ -144,10 +143,10 @@ def main(args=None):
 
     db_instance.disConnection()
 
-    rp.init(args=args)
+    rclpy.init(args=args)
     node = TellTaskManager()
-    rp.spin(node)
-    rp.shutdown()
+    rclpy.spin(node)
+    rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

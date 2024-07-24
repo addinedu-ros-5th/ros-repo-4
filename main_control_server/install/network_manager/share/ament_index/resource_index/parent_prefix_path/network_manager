@@ -1,9 +1,1 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-/home/min/dev_ws/ros-repo-4/main_control_server/install/task_allocator:/home/min/dev_ws/ros-repo-4/main_control_server/install/robot_state:/home/min/dev_ws/ros-repo-4/main_control_server/install/main_server_gui:/home/min/dev_ws/ros-repo-4/main_control_server/install/task_manager:/home/min/dev_ws/ros-repo-4/main_control_server/install/network_manager:/opt/ros/humble
-=======
-/home/edu/dev_ws/git_ws/ros-repo-4/main_control_server/install/task_allocator:/home/edu/dev_ws/git_ws/ros-repo-4/main_control_server/install/robot_state:/home/edu/dev_ws/git_ws/ros-repo-4/main_control_server/install/main_server_gui:/home/edu/dev_ws/git_ws/ros-repo-4/main_control_server/install/task_manager:/home/edu/dev_ws/git_ws/ros-repo-4/main_control_server/install/network_manager:/opt/ros/humble
->>>>>>> 9bf326e1baf8c0a0e415ef9a5918e282fb97eff6
-=======
-/home/edu/dev_ws/git_ws/ros-repo-4/main_control_server/install/robot_state:/home/edu/dev_ws/git_ws/ros-repo-4/main_control_server/install/task_manager:/opt/ros/humble
->>>>>>> 96233de270818c380ca6186861bd32e9f7b2a54f
+/home/min/dev_ws/ros-repo-4/main_control_server/install/task_allocator:/home/min/dev_ws/ros-repo-4/main_control_server/install/main_server_gui:/home/min/dev_ws/ros-repo-4/main_control_server/install/network_manager:/home/min/dev_ws/ros-repo-4/main_control_server/install/robot_state:/home/min/dev_ws/ros-repo-4/main_control_server/install/task_manager:/opt/ros/humble

@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 ﻿// NOLINT: This file starts with a BOM since it contain non-ASCII characters
->>>>>>> 9bf326e1baf8c0a0e415ef9a5918e282fb97eff6
 // generated from rosidl_generator_c/resource/idl__struct.h.em
 // with input from task_manager:msg/SendAllocationResults.idl
 // generated code does not contain a copyright notice
@@ -30,16 +27,11 @@ extern "C"
 /// Struct defined in msg/SendAllocationResults in the package task_manager.
 typedef struct task_manager__msg__SendAllocationResults
 {
-<<<<<<< HEAD
-  rosidl_runtime_c__String robot_name;
-  rosidl_runtime_c__String goal_location;
-=======
   /// Robo1
   rosidl_runtime_c__String robot_name;
   /// I1
   rosidl_runtime_c__String goal_location;
   /// 입고
->>>>>>> 9bf326e1baf8c0a0e415ef9a5918e282fb97eff6
   rosidl_runtime_c__String task_assignment;
 } task_manager__msg__SendAllocationResults;
 
