@@ -3,7 +3,7 @@
 #include <WiFiClient.h>
 #include <WiFiServer.h>
 
-const char* ssid = "addinedu_class_2 (2.4G)";
+const char* ssid = "addinedu_class_1(2.4G)";
 const char* password = "addinedu1";
 
 #define SLAVE1_ADDR 0x08
@@ -14,7 +14,7 @@ WiFiServer server(80); // TCP 서버 포트 설정
 unsigned long previousMillis = 0; // 이전 시간 저장
 const long interval = 1000; // 1초 간격
 
-String MFCNetworkManagerIP = "192.168.0.89"; // network_manager IP 주소
+String MFCNetworkManagerIP = "192.168.2.28"; // network_manager IP 주소
 const uint16_t networkManagerPort = 12345;
 
 void setup() {

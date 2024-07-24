@@ -4,6 +4,8 @@ msg/GuiUpdate.idl
 msg/GuiUpdate.msg
 msg/InspectionComplete.idl
 msg/InspectionComplete.msg
+msg/SendAllocationResults.idl
+msg/SendAllocationResults.msg
 msg/StartInspection.idl
 msg/StartInspection.msg
 srv/AllocatorTask.idl
