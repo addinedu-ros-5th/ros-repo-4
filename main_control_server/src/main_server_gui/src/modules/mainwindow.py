@@ -4,11 +4,9 @@ from ament_index_python.packages import get_package_share_directory
 import os
 import mysql.connector as con
 
-
 from modules.connect import *
 from modules.robotstatewindow import *
 from modules.signinwindow import *
-from modules.node import *
 
 class MainWindow(QtWidgets.QMainWindow):
     # Signal 정의 로스노드로부터 데이터를 받아야해요~
@@ -24,14 +22,16 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, username=''):
         super(MainWindow, self).__init__()
         self.inbound_management_active = False
+
         ui_file = os.path.join(get_package_share_directory('main_server_gui'), 'ui', 'window2.ui')
         uic.loadUi(ui_file, self)
+
         self.username = username
         self.treeWidget.itemClicked.connect(self.handle_tree_item_click)
         self.signinButton.clicked.connect(self.open_signin_window)
         self.logoutButton.clicked.connect(self.handle_logout)
         self.update_ui_for_logged_in_user()
-        self.robot_state_window = None
+    
         self.startButton.clicked.connect(self.toggleClock)
         self.startButton.setEnabled(False)  
         self.timeEdit.setTime(QTime(7, 55))
@@ -42,7 +42,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.schedule_timer.timeout.connect(self.check_schedule)
         self.schedule_timer.start(1000)
 
-        
+        # 관제 및 로봇 상태 관리창 인스턴스
+        self.robot_state_window = None
+
         # Signal 연결
         self.inbound_list_signal.connect(self.display_inbound_list)
         self.inbound_status_db_update_signal.connect(self.show_inbound_management)
