@@ -1,13 +1,29 @@
 #!/usr/bin/env python3
-import rclpy
-from rclpy.node import Node
+import rclpy as rp
+from rp.node import Node
+from rp.action import ActionServer
+import math
+import time
 import sys
 import os
+# Connect 클래스 인스턴스 생성
 from modules.connect import *
-# 서비스 서버
+# AmclSubscriber 클래스 인스턴스 생성
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../network_manager/lib/network_manager')))
+from communication_robot_node import AmclSubscriber 
+
+# 서비스 서버.
 from robot_state.srv import UpdateDB
+# 로봇에게 task allocate할 메세지 타입.
 from task_manager.msg import SendAllocationResults
+<<<<<<< HEAD
 from std_msgs.msg import String
+=======
+# 사용자 정의된 로봇(액션 클라이언트)과 액션 통신 메세지 타입.
+from robot_state.action import RobotTask
+
+from rp.executors import MultiThreadedExecutor
+>>>>>>> 96233de270818c380ca6186861bd32e9f7b2a54f
 
 
 def get_mysql_connection():
@@ -37,8 +53,10 @@ class TellTaskManager(Node):
         self.db_instance = get_mysql_connection()
         self.update_robot_state = UpdateRobotState(self.db_instance)
 
+        # 'UpdateDB' 메세지 타입의 서비스 서버
         self.server = self.create_service(UpdateDB, 'update_db', self.callback_service)
 
+        # 'SendAllocationResults' 메세지 타입의 subscriber
         self.allocation_results_subscription = self.create_subscription(
             SendAllocationResults,
             'send_allocation_results',
@@ -47,9 +65,12 @@ class TellTaskManager(Node):
         
         self.publisher_pose_commands = self.create_publisher(String, 'pose_commands', 10)
 
+        # self.robot_name = None
+        # self.goal_location = None
+
     def callback_service(self, request, response):
         # 디버깅용
-        print(f"Request : , \n{request}")
+        print(f"Request : \n{request}")
         print('\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\')
 
         ## 여기에 mysql문으로 불러온 것 필요
@@ -70,16 +91,42 @@ class TellTaskManager(Node):
    
         return response
     
-
     def task_assignment_callback(self, msg):
-        self.get_logger().info(f'Received task assignment for robot: {msg.robot_name}')
-        self.get_logger().info(f'Goal Location: {msg.goal_location}')
-        self.get_logger().info(f'Task Assignment: {msg.task_assignment}')
+        self.get_logger().info(f'Received task assignment for robot: {msg.robot_name}')  # Robo1
+        self.get_logger().info(f'Goal Location: {msg.goal_location}')                    # I1
+        self.get_logger().info(f'Task Assignment: {msg.task_assignment}')                # 입고
 
+<<<<<<< HEAD
         pose_command = String()
         pose_command.data = msg.goal_location
         self.publisher_pose_commands.publish(pose_command)
         self.get_logger().info(f'Published pose command: {pose_command.data}')
+=======
+        ##############################여기다가 robot_state_manager -> robot으로 robot_name goal_location 전달##############################
+        # self.robot_name = msg.robot_name
+        # self.goal_location = msg.goal_location
+        # self.task_assignment = msg.task_assignment
+
+# class TaskManagerSub_Action(TellTaskManager):
+#     def __init__(self):
+#         super().__init__()
+#         self.amcl_subscriber = AmclSubscriber()
+#         self.amcl_1 = self.amcl_subscriber.get_amcl_pose()
+
+    
+# class MFCRobotServer(Node):
+#     def __init__(self):
+# 	  ## 구독자 노드 이름 설정
+#       super().__init__('mfc_robot_action_server')
+#       self.total_dist = 0 
+#       self.is_first_time = True 
+#       self._action_server = ActionServer(
+#             self,
+#             RobotTask,
+#             'mfc_robot',
+#             self.execute_callback)
+        
+>>>>>>> 96233de270818c380ca6186861bd32e9f7b2a54f
     
 def main(args=None):
     db_instance = get_mysql_connection()
@@ -97,10 +144,10 @@ def main(args=None):
 
     db_instance.disConnection()
 
-    rclpy.init(args=args)
+    rp.init(args=args)
     node = TellTaskManager()
-    rclpy.spin(node)
-    rclpy.shutdown()
+    rp.spin(node)
+    rp.shutdown()
 
 if __name__ == '__main__':
     main()

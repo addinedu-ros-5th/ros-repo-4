@@ -34,6 +34,7 @@ install(
 # Add the service files
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/UpdateDB.srv"
+  "action/RobotTask.action"
 )
 
 install(

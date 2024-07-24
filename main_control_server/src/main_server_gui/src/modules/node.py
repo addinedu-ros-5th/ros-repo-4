@@ -79,20 +79,3 @@ class InboundNode(Node):
     def gui_update_callback(self, msg):
         self.get_logger().info(f'GUI Update signal received for product {msg.product_code} with status {msg.status}')
         self.main_window.inbound_status_db_update_signal.emit()
-
-
-    
-
-
-class AmclSubscriber(Node):
-    def __init__(self, robot_state_window):
-        super().__init__('amcl_subscriber')
-        self.robot_state_window = robot_state_window
-        self.pose1_sub = self.create_subscription(PoseWithCovarianceStamped, 'amcl_pose', self.amcl_callback1, 10)
-
-    def amcl_callback1(self, amcl):
-        global amcl_1
-        amcl_1 = amcl
-        print(amcl_1)
-        print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
-        self.robot_state_window.update_amcl_pose(amcl) #예시??
