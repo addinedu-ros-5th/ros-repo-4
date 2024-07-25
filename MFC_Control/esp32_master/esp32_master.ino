@@ -3,6 +3,11 @@
 #include <WiFiClient.h>
 #include <WiFiServer.h>
 
+// const char* ssid = "TOM N TOMS 2G";
+
+// const char* ssid = "902";
+// const char* password = "22177070";
+
 const char* ssid = "addinedu_class_1(2.4G)";
 const char* password = "addinedu1";
 
@@ -14,7 +19,9 @@ WiFiServer server(80); // TCP 서버 포트 설정
 unsigned long previousMillis = 0; // 이전 시간 저장
 const long interval = 1000; // 1초 간격
 
-String MFCNetworkManagerIP = "192.168.2.28"; // network_manager IP 주소
+// String MFCNetworkManagerIP = "172.30.1.28"; // network_manager IP 주소 탐탐
+// String MFCNetworkManagerIP = "192.168.0.15"; // network_manager IP 주소 쬰지네192.168.2.28
+String MFCNetworkManagerIP = "192.168.2.28"; // network_manager IP 주소 학원
 const uint16_t networkManagerPort = 12345;
 
 void setup() {
@@ -27,6 +34,7 @@ void setup() {
   Wire.begin(21, 22); // I2C 마스터 초기화, SDA=GPIO 21, SCL=GPIO 22
 
   WiFi.begin(ssid, password);
+  // WiFi.begin(ssid);
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Connecting to WiFi...");
@@ -102,17 +110,18 @@ void requestInspectionComplete(uint8_t address) {
   String responseStr = String(response);
   if (responseStr.startsWith("INSPECTION_COMPLETE:")) {
     String productCode = responseStr.substring(responseStr.indexOf(':') + 1);
-    Serial.println("Inspection completed for product: " + productCode);
+    Serial.println("Inspection completed for product:" + productCode);
     // 필요한 추가 작업 수행
-    notifyNetworkManager(productCode);
+    notifyNetworkManager("Inspection",productCode);
   }
 }
 
-void notifyNetworkManager(const String& productCode) {
+void notifyNetworkManager(const String& task,const String& productCode) {
   WiFiClient client;
   Serial.println("Attempting to connect to network manager...");
   if (client.connect(MFCNetworkManagerIP.c_str(), networkManagerPort)) {
-    String message = "TASK_COMPLETE:" + productCode;
+    String message = "result-"+task +":" + productCode;
+    Serial.println(productCode);
     client.print(message);
     client.stop();
     Serial.println("Sent task completion to network_manager: " + message);

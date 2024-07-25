@@ -3,7 +3,7 @@
 
 import rclpy
 from rclpy.node import Node
-from task_manager.msg import StartInspection, InspectionComplete
+from task_manager.msg import StartInspection, InspectionComplete, SendAllocationResults
 from modules.esp32_master import ESP32Master
 import sqlite3
 import socket
@@ -20,12 +20,20 @@ class MFCNetworkManager(Node):
             'mfc_start_inspection',
             self.start_inspection_callback,
             10)
-        
-        self.esp32_master = ESP32Master('192.168.2.66', 80) # 시리얼 통신 클래스 인스턴스 생성
+        #192.168.0.9 쬰지네
+        #172.30.1.77 탐탐
+        #192.168.2.56 학원
+        self.esp32_master = ESP32Master('192.168.2.56', 80) # 시리얼 통신 클래스 인스턴스 생성
         self.receive_inspection_server_thread = threading.Thread(target=self.receive_inspection_server)
         self.receive_inspection_server_thread.start()
 
         self.inspection_complete_publisher = self.create_publisher(InspectionComplete, 'inspection_complete', 10)
+
+        self.allocation_results_subscription = self.create_subscription(
+            SendAllocationResults,
+            'send_allocation_results',
+            self.task_assignment_callback,
+            10)
 
 
     def start_inspection_callback(self, msg):
@@ -34,7 +42,9 @@ class MFCNetworkManager(Node):
 
     def receive_inspection_server(self):
         self.check_and_close_existing_socket('192.168.2.28', 12345)
-
+        #192.168.0.15 쬰지네
+        #172.30.1.28 탐탐
+        #192.168.2.28 학원
 
         receive_inspection_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         receive_inspection_server_socket.bind(('192.168.2.28', 12345))  # 서버 IP와 포트 설정 ifconfig러 확인하기
@@ -46,7 +56,7 @@ class MFCNetworkManager(Node):
             self.get_logger().info(f'Connected by {addr}')
             data = client_socket.recv(1024).decode()
             self.get_logger().info(f'Received: {data}')
-            if data.startswith("TASK_COMPLETE:"):
+            if data.startswith("result-"):
                 product_code = data.split(':')[1]
                 self.handle_task_complete(product_code)
             client_socket.close()
@@ -70,8 +80,15 @@ class MFCNetworkManager(Node):
                     os.kill(pid, signal.SIGKILL)
                     self.get_logger().info(f'Killed process {pid} using port {port}')
 
+    def task_assignment_callback(self, msg):
+        goal_location = msg.goal_location  # 예: RA-1
+        task_assignment = msg.task_assignment  # 예: 입고
+        # ESP32 마스터 보드에 명령 보내기
+        command = f'START-{task_assignment}:{goal_location}'
+        self.esp32_master.send_signal(command)
+        self.get_logger().info(f'Sent command to ESP32: {command}')
 
-    
+
 
     def destroy_node(self):
         self.esp32_master.close()

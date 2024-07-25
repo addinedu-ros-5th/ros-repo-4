@@ -16,8 +16,8 @@ class MainWindow(QtWidgets.QMainWindow):
     schedule_signal = pyqtSignal()  # 8시가 되었음을 알리는 신호
 
 
-    db_update_signal = pyqtSignal(str)  # DB 업데이트 완료요~
-    inbound_status_db_update_signal = pyqtSignal() 
+    db_update_signal = pyqtSignal(str)  # DB 업데이트 완료요~(task_manager한테 알려줄 용도)
+    inbound_status_db_update_signal = pyqtSignal()
 
     def __init__(self, username=''):
         super(MainWindow, self).__init__()
@@ -90,7 +90,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.inbound_management_active:
             self.show_inbound_management()
 
-    def update_inbound_list(self, inbound_list):
+    def update_inbound_list(self, inbound_list):#초기 리스트 update
         db_instance = self.get_mysql_connection()
         if db_instance:
             try:
@@ -109,7 +109,7 @@ class MainWindow(QtWidgets.QMainWindow):
             except con.Error as err:
                 print(f"Error: {err}")
                 db_instance.disConnection()
-
+    
 
     def handle_tree_item_click(self, item, column):
         if not self.username:

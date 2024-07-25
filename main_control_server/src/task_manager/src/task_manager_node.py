@@ -23,7 +23,7 @@ class OrderListService(Node):
         self.inspection_started = False  # 플래그 변수 초기화
         self.inspection_index = 0  # 검수 진행 중인 아이템 인덱스
 
-        # ???????용도????????
+        # list gui가 db에 저장완료했다고 신호받고 첫행 꺼내오기
         self.subscription = self.create_subscription(
             DbUpdate,
             'db_update_status',
@@ -144,14 +144,24 @@ class OrderListService(Node):
         self.send_update_signal_to_gui(msg.product_code,'검수완료')
         self.send_task_allocation_request(msg.product_code,"입고")
 
+
+
         
-    def update_status_in_db(self, product_code, status):
+    def update_status_in_db(self, product_code, status):        
         db_connection = Connect("team4", "0444")
-        cursor = db_connection.cursor
-        cursor.execute("UPDATE Inbound_Manager SET Status = %s WHERE Product_Code = %s", (status, product_code))
-        db_connection.conn.commit()
-        db_connection.disConnection()
-        self.get_logger().info(f'Status for product {product_code} updated to {status} in DB')
+        if not db_connection.conn or not db_connection.cursor:
+            self.get_logger().error("Failed to connect to the database")
+            return
+
+        try:
+            cursor = db_connection.cursor
+            cursor.execute("UPDATE Inbound_Manager SET Status = %s WHERE Product_Code = %s", (status, product_code))
+            db_connection.conn.commit()
+            self.get_logger().info(f'Status for product {product_code} updated to {status} in DB')
+        except con.Error as err:
+            self.get_logger().error(f"Error: {err}")
+        finally:
+            db_connection.disConnection()
 
 
     def send_update_signal_to_gui(self, product_code, status):
