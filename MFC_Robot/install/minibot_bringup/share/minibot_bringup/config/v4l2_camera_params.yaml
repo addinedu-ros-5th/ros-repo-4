@@ -1,0 +1,27 @@
+# minibot_bringup/config/v4l2_camera_params.yaml
+v4l2_camera_node:
+  ros__parameters:
+    video_device: "/dev/video0"
+    image_width: 640
+    image_height: 480
+    pixel_format: "YUYV"
+    camera_frame_id: "camera_frame"
+    io_method: "mmap"
+    brightness: 50  # 유효 범위 내의 값으로 수정
+    contrast: 0    # 유효 범위 내의 값으로 수정
+    saturation: 0  # 유효 범위 내의 값으로 수정
+    sharpness: 0   # 유효 범위 내의 값으로 수정
+    gain: 0
+    white_balance_automatic: true
+    power_line_frequency: 2
+    white_balance_temperature: 4000
+    exposure_auto: true
+    exposure_absolute: 1000
+    exposure_auto_priority: false
+    pan: 0
+    tilt: 0
+    roll: 0
+    zoom: 100
+    focus_auto: true
+    focus_absolute: 0
+

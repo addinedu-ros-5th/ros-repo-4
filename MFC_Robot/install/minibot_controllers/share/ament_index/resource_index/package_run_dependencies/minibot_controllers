@@ -1,0 +1,1 @@
+minibot_interfaces;controller_interface;lifecycle_msgs;pluginlib;rclcpp_lifecycle;rcutils;realtime_tools;std_msgs;std_srvs;ament_lint_auto;ament_lint_common

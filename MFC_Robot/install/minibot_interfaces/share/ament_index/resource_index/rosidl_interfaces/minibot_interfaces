@@ -1,0 +1,4 @@
+msg/LampCommand.idl
+msg/LampCommand.msg
+msg/RobotState.idl
+msg/RobotState.msg

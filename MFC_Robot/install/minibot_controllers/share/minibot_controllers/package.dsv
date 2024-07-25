@@ -1,0 +1,11 @@
+source;share/minibot_controllers/hook/cmake_prefix_path.ps1
+source;share/minibot_controllers/hook/cmake_prefix_path.dsv
+source;share/minibot_controllers/hook/cmake_prefix_path.sh
+source;share/minibot_controllers/hook/ld_library_path_lib.ps1
+source;share/minibot_controllers/hook/ld_library_path_lib.dsv
+source;share/minibot_controllers/hook/ld_library_path_lib.sh
+source;share/minibot_controllers/local_setup.bash
+source;share/minibot_controllers/local_setup.dsv
+source;share/minibot_controllers/local_setup.ps1
+source;share/minibot_controllers/local_setup.sh
+source;share/minibot_controllers/local_setup.zsh
