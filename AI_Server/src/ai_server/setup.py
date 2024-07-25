@@ -20,7 +20,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'ai_server = ai_server.ai_main:main'
+            'ai_server = ai_server.ai_main:main',
+            'display_result = ai_server.display_result:main',
+            'result_publisher = ai_server.result_publisher:main',
         ],
     },
 )
