@@ -1,0 +1,23 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from robot_state/srv/UpdateDB.srv
+// generated code does not contain a copyright notice
+
+
+module robot_state {
+  module srv {
+    @verbatim (language="comment", text=
+      "Request")
+    struct UpdateDB_Request {
+      string robot_name;
+    };
+    @verbatim (language="comment", text=
+      "Response")
+    struct UpdateDB_Response {
+      string robot_name;
+
+      string battery_status;
+
+      string status;
+    };
+  };
+};

@@ -1,0 +1,12 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from task_manager/msg/InspectionComplete.msg
+// generated code does not contain a copyright notice
+
+
+module task_manager {
+  module msg {
+    struct InspectionComplete {
+      string product_code;
+    };
+  };
+};

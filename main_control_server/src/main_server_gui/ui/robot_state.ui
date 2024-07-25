@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1223</width>
+    <width>1475</width>
     <height>899</height>
    </rect>
   </property>
@@ -859,49 +859,13 @@
     </property>
    </widget>
   </widget>
-  <widget class="QPushButton" name="btn_robot1">
-   <property name="geometry">
-    <rect>
-     <x>1000</x>
-     <y>240</y>
-     <width>90</width>
-     <height>90</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>15</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>Robot1</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="btn_robot2">
-   <property name="geometry">
-    <rect>
-     <x>1110</x>
-     <y>240</y>
-     <width>90</width>
-     <height>90</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>15</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>Robot2</string>
-   </property>
-  </widget>
   <widget class="QFrame" name="frame">
    <property name="geometry">
     <rect>
      <x>710</x>
      <y>350</y>
      <width>485</width>
-     <height>541</height>
+     <height>716</height>
     </rect>
    </property>
    <property name="frameShape">
@@ -916,7 +880,7 @@
       <x>0</x>
       <y>0</y>
       <width>485</width>
-      <height>541</height>
+      <height>716</height>
      </rect>
     </property>
     <property name="text">
@@ -946,6 +910,92 @@
    <property name="text">
     <string>메인으로</string>
    </property>
+  </widget>
+  <widget class="QFrame" name="frame_robot1">
+   <property name="geometry">
+    <rect>
+     <x>1000</x>
+     <y>240</y>
+     <width>90</width>
+     <height>90</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="autoFillBackground">
+    <bool>true</bool>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::StyledPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Raised</enum>
+   </property>
+   <widget class="QPushButton" name="btn_robot1">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>90</width>
+      <height>90</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>15</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Robot1</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QFrame" name="frame_robot2">
+   <property name="geometry">
+    <rect>
+     <x>1100</x>
+     <y>240</y>
+     <width>90</width>
+     <height>90</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="autoFillBackground">
+    <bool>true</bool>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::StyledPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Raised</enum>
+   </property>
+   <widget class="QPushButton" name="btn_robot2">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>90</width>
+      <height>90</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>15</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Robot2</string>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources>

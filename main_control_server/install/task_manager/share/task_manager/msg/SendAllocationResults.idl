@@ -1,0 +1,22 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from task_manager/msg/SendAllocationResults.msg
+// generated code does not contain a copyright notice
+
+
+module task_manager {
+  module msg {
+    struct SendAllocationResults {
+      @verbatim (language="comment", text=
+        "Robo1")
+      string robot_name;
+
+      @verbatim (language="comment", text=
+        "I1")
+      string goal_location;
+
+      @verbatim (language="comment", text=
+        "입고")
+      string task_assignment;
+    };
+  };
+};
