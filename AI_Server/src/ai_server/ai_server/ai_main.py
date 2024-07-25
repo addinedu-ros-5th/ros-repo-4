@@ -20,7 +20,7 @@ print(f"Server listening on {server_ip}:{server_port}")
 class DetectionClient(Node):
     def __init__(self):
         super().__init__('detection_client')
-        self.publisher_ = self.create_publisher(String, 'detection_result', 10)
+        self.publisher = self.create_publisher(String, 'detection_result', 10)
 
     def send_detection_data(self, labels, distances):
         detection_data = {
@@ -29,7 +29,7 @@ class DetectionClient(Node):
         }
         msg = String()
         msg.data = json.dumps(detection_data)
-        self.publisher_.publish(msg)
+        self.publisher.publish(msg)
         self.get_logger().info("Detection data sent")
 
 def main():
