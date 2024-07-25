@@ -1,4 +1,0 @@
-# generated from rosidl_cmake/cmake/rosidl_cmake-extras.cmake.in
-
-set(task_manager_IDL_FILES "srv/GenerateOrder.idl")
-set(task_manager_INTERFACE_FILES "srv/GenerateOrder.srv;srv/GenerateOrder_Request.msg;srv/GenerateOrder_Response.msg")

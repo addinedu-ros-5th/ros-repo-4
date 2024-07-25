@@ -1,0 +1,27 @@
+from setuptools import setup
+
+package_name = 'robot_state'
+
+setup(
+    name=package_name,
+    version='0.0.0',
+    packages=[package_name],
+    py_modules=[
+        'robot_state.robotgoal_test',
+        'robot_state.robotgoal',
+        'robot_state.test_amcl_subscriber',
+    ],
+    install_requires=['setuptools'],
+    zip_safe=True,
+    maintainer='edu',
+    maintainer_email='heagon72@gmail.com',
+    description='TODO: Package description',
+    license='TODO: License declaration',
+    tests_require=['pytest'],
+    entry_points={
+        'console_scripts': [
+            'test_amcl_subscriber = robot_state.test_amcl_subscriber:main',
+            'robot_state_manager_node = robot_state.robot_state_manager_node:main'
+        ],
+    },
+)

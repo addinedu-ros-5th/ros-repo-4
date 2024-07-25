@@ -8,7 +8,9 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclpy REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(robot_state)
 
 # Install launch files
 install(
@@ -24,6 +26,13 @@ install(
   PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
               GROUP_EXECUTE GROUP_READ
               WORLD_EXECUTE WORLD_READ
+)
+
+# Install Python modules
+install(
+  DIRECTORY src/modules
+  DESTINATION lib/${PROJECT_NAME}
+  FILES_MATCHING PATTERN "*.py"
 )
 
 if(BUILD_TESTING)

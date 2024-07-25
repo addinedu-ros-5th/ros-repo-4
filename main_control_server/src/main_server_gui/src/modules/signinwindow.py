@@ -4,7 +4,8 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import QTimer, QTime, Qt
-from modules.connect import Connect
+from modules.connect import *
+
 import mysql.connector as con
 import os
 
