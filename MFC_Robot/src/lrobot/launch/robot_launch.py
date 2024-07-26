@@ -17,8 +17,8 @@ def generate_launch_description():
         # ),
         Node(
             package='lrobot',
-            executable='robot_controller',
-            name='robot_controller',
+            executable='robot_control',
+            name='robot_control',
             output='screen',
             parameters=[{
                 'use_sim_time': True 

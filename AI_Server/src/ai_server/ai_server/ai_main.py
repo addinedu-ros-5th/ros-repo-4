@@ -4,9 +4,9 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 import json
-from .yolo_loads import YoloDetector
-from .distance_calculator import DistanceCalculator
-from .data_handle import DataHandler
+from .yolo_loads import YoloDetector  # YOLO 모델 불러오기
+from .distance_calculator import DistanceCalculator  # 거리 계산 모듈 불러오기
+from .data_handle import DataHandler  # 데이터 핸들링 모듈 불러오기
 
 # 서버 설정
 server_ip = '0.0.0.0'
@@ -53,6 +53,9 @@ def main():
                         break
 
                     results = yolo_detector.detect_objects(image)
+                    
+                    # 화면 중심 계산
+                    img_center_x = image.shape[1] // 2
 
                     labels = []
                     distances = []
@@ -61,30 +64,35 @@ def main():
                     for result in results:
                         for box in result.boxes:
                             if box.cls == 0 and box.conf > 0.7:
-                                detected_people = True
+                                # 객체의 중심 좌표 계산
                                 x1, y1, x2, y2 = map(int, box.xyxy[0])
-                                distance = distance_calculator.calculate_distance(
-                                    lidar_data,
-                                    (x1, y1, x2, y2),
-                                    image.shape[1],
-                                    0.07,
-                                    0.02
-                                )
-                                labels.append('person')
-                                distances.append(distance)
-                                label = f"person {distance:.2f}m"
-                                cv2.rectangle(annotated_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                                cv2.putText(annotated_image, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-                                x_center = (x1 + x2) // 2
-                                y_center = (y1 + y2) // 2
-                                cv2.circle(annotated_image, (x_center, y_center), 5, (0, 0, 255), -1)
-                                print(label)
+                                box_center_x = (x1 + x2) // 2
+
+                                # 객체가 화면 중심으로부터 100픽셀 이내에 있는지 확인
+                                if abs(box_center_x - img_center_x) <= 100:
+                                    detected_people = True
+                                    distance = distance_calculator.calculate_distance(
+                                        lidar_data,
+                                        (x1, y1, x2, y2),
+                                        image.shape[1],
+                                        0.07,
+                                        0.02
+                                    )
+                                    labels.append('person')
+                                    distances.append(distance)
+                                    label = f"person {distance:.2f}m"
+                                    cv2.rectangle(annotated_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                                    cv2.putText(annotated_image, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                                    x_center = (x1 + x2) // 2
+                                    y_center = (y1 + y2) // 2
+                                    cv2.circle(annotated_image, (x_center, y_center), 5, (0, 0, 255), -1)
+                                    print(label)
 
                     if labels and distances:
                         detection_client.send_detection_data(labels, distances)
 
                     if not detected_people:
-                        print("No person detected")
+                        print("No person detected within the specified range")
 
                     cv2.imshow('YOLO Output', annotated_image)
                     if cv2.waitKey(1) & 0xFF == ord('q'):

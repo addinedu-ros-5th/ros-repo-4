@@ -1,8 +1,0 @@
-<library path="minibot_controllers">
-    <class name="minibot_controllers/GPIOController" type="minibot_controllers::GPIOController" base_class_type="controller_interface::ControllerInterface">
-        <description>
-            The GPIO Controller for interfacing robot devices.
-        </description>
-    </class>
-</library>
-Footer
