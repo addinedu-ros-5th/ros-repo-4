@@ -7,4 +7,4 @@
 #### 2. workspace에서 의존성 자동 설치
 rosdep install --from-paths src --ignore-src -r -y
 
-#### 2. colcon build
+#### 3. colcon build
