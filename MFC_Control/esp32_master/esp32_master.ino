@@ -20,7 +20,7 @@ unsigned long previousMillis = 0; // 이전 시간 저장
 const long interval = 1000; // 1초 간격
 
 // String MFCNetworkManagerIP = "172.30.1.28"; // network_manager IP 주소 탐탐
-// String MFCNetworkManagerIP = "192.168.0.15"; // network_manager IP 주소 쬰지네192.168.2.28
+// String MFCNetworkManagerIP = "192.168.0.15"; // network_manager IP 주소 쬰지네
 String MFCNetworkManagerIP = "192.168.2.28"; // network_manager IP 주소 학원
 const uint16_t networkManagerPort = 12345;
 

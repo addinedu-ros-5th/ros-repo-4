@@ -10,7 +10,6 @@ from task_manager.msg import StartInspection, InspectionComplete, SendAllocation
 from task_manager.srv import GenerateOrder, AllocatorTask
 from robot_state.srv import UpdateDB
 
-import sqlite3
 import mysql.connector as con
 
 class OrderListService(Node):
@@ -22,6 +21,9 @@ class OrderListService(Node):
 
         self.inspection_started = False  # 플래그 변수 초기화
         self.inspection_index = 0  # 검수 진행 중인 아이템 인덱스
+        self.total_items_to_inspect = 0
+        self.inspected_items_count = 0
+
 
         # list gui가 db에 저장완료했다고 신호받고 첫행 꺼내오기
         self.subscription = self.create_subscription(
@@ -100,7 +102,8 @@ class OrderListService(Node):
         self.get_logger().info(f'Received DB update status: {msg.status}')
         if msg.status == "DB Update Completed" and not self.inspection_started:
             self.inspection_started = True
-            self.get_first_item_from_db()
+            self.get_items_to_inspect()
+            self.process_next_item()
             
     def send_signal_start_inspection_to_mfc(self, product):
         self.inspection_started = False  # 신호 전송 후 플래그 설정
@@ -111,16 +114,38 @@ class OrderListService(Node):
         self.get_logger().info(f'Sending inspection start signal for {product["Product_Name"]}')
 
     
-    def get_first_item_from_db(self):
-        # DB에서 첫 번째 항목 가져오기
+    def get_items_to_inspect(self):
         db_connection = Connect("team4", "0444")
         cursor = db_connection.cursor
-        cursor.execute("SELECT * FROM Inbound_Manager WHERE Status = '입하완료' ORDER BY No LIMIT 1")
+        cursor.execute("SELECT COUNT(*) FROM Inbound_Manager WHERE Status = '입하완료'")
+        self.total_items_to_inspect = cursor.fetchone()[0]
+        self.get_logger().info(f"Total item at index { self.total_items_to_inspect}")
+        db_connection.disConnection()
+
+    def get_item_from_db(self):
+        db_connection = Connect("team4", "0444")
+        cursor = db_connection.cursor
+        
+        # 전체 '입하완료' 상태의 항목 로깅
+        cursor.execute("SELECT * FROM Inbound_Manager WHERE Status = '입하완료' ORDER BY No")
+        all_rows = cursor.fetchall()
+        self.get_logger().info(f"All rows with '입하완료' status: {all_rows}")
+        
+        # 인덱스에 해당하는 항목 가져오기
+        cursor.execute("SELECT * FROM Inbound_Manager WHERE Status = '입하완료' ORDER BY No LIMIT 1 OFFSET %s", (self.inspection_index,))
+        self.get_logger().info(f"Processing item at index {self.inspection_index}")
         row = cursor.fetchone()
+        self.get_logger().info(f"Fetched row from DB at index {self.inspection_index}: {row}")
         db_connection.disConnection()
         
+        return row
+
+    def process_next_item(self):
+        row = self.get_item_from_db()
+        
         if row:
-            self.get_logger().info(f"Fetched row from DB: {row}")  # 디버깅을 위해 추가
+            self.inspection_started = True
+            self.get_logger().info(f"Fetched row from DB: {row}") 
             product = {
                 "No": row[0],
                 "Product_Code": row[1],
@@ -131,18 +156,22 @@ class OrderListService(Node):
                 "Receiving_Quant": row[6],
                 "Status": row[7]
             }
-            self.get_logger().info(f"First row in Inbound List: {product}")
+            self.get_logger().info(f"Processing item at index {self.inspection_index}: {product}")
             self.send_signal_start_inspection_to_mfc(product)
         else:
             self.inspection_started = False
-            self.get_logger().info('No items to inspect.')
-
+            self.get_logger().info('No more items to inspect.')
 
     def inspection_complete_callback(self, msg):
         self.get_logger().info(f'Inspection complete for product: {msg.product_code}')
         self.update_status_in_db(msg.product_code, '검수완료')
-        self.send_update_signal_to_gui(msg.product_code,'검수완료')
-        self.send_task_allocation_request(msg.product_code,"입고")
+        self.send_update_signal_to_gui(msg.product_code, '검수완료')
+
+        self.inspected_items_count += 1
+        if self.inspected_items_count == self.total_items_to_inspect:
+            self.get_logger().info('All inspections complete. Sending task allocation requests.')
+        else:
+            self.process_next_item()
 
 
 
