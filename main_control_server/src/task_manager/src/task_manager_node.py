@@ -166,6 +166,7 @@ class OrderListService(Node):
         self.get_logger().info(f'Inspection complete for product: {msg.product_code}')
         self.update_status_in_db(msg.product_code, '검수완료')
         self.send_update_signal_to_gui(msg.product_code, '검수완료')
+        # self.send_task_allocation_request(msg.product_code,"입고")
 
         self.inspected_items_count += 1
         if self.inspected_items_count == self.total_items_to_inspect:

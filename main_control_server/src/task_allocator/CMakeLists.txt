@@ -9,7 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(task_manager REQUIRED)
+# find_package(task_manager REQUIRED)
 
 # Install Python scripts with executable permissions
 install(

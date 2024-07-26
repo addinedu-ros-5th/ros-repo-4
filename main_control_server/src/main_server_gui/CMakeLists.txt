@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 3.5)
 project(main_server_gui)
 
 # Find dependencies
-find_package(task_manager REQUIRED)
+# find_package(task_manager REQUIRED)
 find_package(ament_cmake REQUIRED)
-find_package(network_manager REQUIRED)    # new
-find_package(robot_state REQUIRED)        # new
+# find_package(network_manager REQUIRED)    # new
+# find_package(robot_state REQUIRED)        # new
 find_package(rclpy REQUIRED)              # new
 find_package(std_msgs REQUIRED)           # new
 find_package(geometry_msgs REQUIRED)      # new

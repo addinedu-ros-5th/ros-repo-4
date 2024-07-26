@@ -8,10 +8,10 @@
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
-  <depend>network_manager</depend>
+  <!-- <depend>network_manager</depend>
   <depend>robot_state</depend>
   <build_depend>task_manager</build_depend>
-  <exec_depend>task_manager</exec_depend>
+  <exec_depend>task_manager</exec_depend> -->
 
   <depend>ament_index_python</depend>
   <depend>rclpy</depend>
