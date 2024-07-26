@@ -14,7 +14,7 @@ class ArucoCmdVelPublisher(Node):
         self.get_logger().info('ArucoCmdVelPublisher node has been started.')
 
         self.bridge = CvBridge()
-        self.marker_size = 7.5  # 센티미터 단위
+        self.marker_size = 3.1  # 센티미터 단위
         self.angle_aligned = False  # 각도 조정 완료 여부
 
         try:
@@ -40,7 +40,7 @@ class ArucoCmdVelPublisher(Node):
             )
 
             # cmd_vel 퍼블리셔
-            self.cmd_vel_publisher = self.create_publisher(Twist, 'cmd_vel', 10)
+            self.cmd_vel_publisher = self.create_publisher(Twist, 'base_controller/cmd_vel_unstamped', 10)
 
             self.get_logger().info('Initialization complete.')
         
@@ -87,11 +87,14 @@ class ArucoCmdVelPublisher(Node):
 
                             self.cmd_vel_publisher.publish(twist)
                         else:
-                            # 마커와의 거리가 30cm보다 크면 전진
+                            # 마커와의 거리가 20cm보다 크면 전진, 작으면 후진
                             distance = np.sqrt(tVec[0][0]**2 + tVec[1][0]**2 + tVec[2][0]**2)
                             twist = Twist()
-                            if distance > 30:
+                            if distance > 20:
                                 twist.linear.x = 0.1
+                                twist.angular.z = 0.0
+                            elif distance < 15:
+                                twist.linear.x = -0.1
                                 twist.angular.z = 0.0
                             else:
                                 twist.linear.x = 0.0
@@ -107,11 +110,12 @@ class ArucoCmdVelPublisher(Node):
                 self.get_logger().info('No markers detected.')
             
             # OpenCV를 사용하여 화면에 이미지 표시
-            cv.imshow('Aruco Detection', frame)
-            cv.waitKey(1)
+            # cv.imshow('Aruco Detection', frame)
+            # cv.waitKey(1)
         
         except Exception as e:
             self.get_logger().error(f'Error in process_image: {e}')
+
 
     def get_marker_corners_3d(self):
         return np.array([

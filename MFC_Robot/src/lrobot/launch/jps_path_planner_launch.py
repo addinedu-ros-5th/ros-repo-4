@@ -17,8 +17,8 @@ def generate_launch_description():
         # ),
         Node(
             package='lrobot',
-            executable='robot_controller',
-            name='robot_controller',
+            executable='jps_path_planner',
+            name='jps_path_planner',
             output='screen',
             parameters=[{
                 'use_sim_time': True 

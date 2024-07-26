@@ -1,1 +1,0 @@
-string product_code
