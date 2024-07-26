@@ -15,18 +15,25 @@ import rclpy
 from rclpy.node import Node
 from modules.connect import *
 from ament_index_python.packages import get_package_share_directory
+from geometry_msgs.msg import PoseWithCovarianceStamped
 
 # 현재 파일의 디렉토리 경로를 기준으로 network_manager/lib/network_manager 경로를 추가
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../network_manager/lib/network_manager')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../network_manager/lib/network_manager')))
 from communication_robot_node import AmclSubscriber 
 
 # 현재 파일의 디렉토리 경로를 기준으로 network_manager/lib/network_manager 경로를 추가
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../robot_state/lib/robot_state')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../robot_state/lib/robot_state')))
 from robot_state_manager_node import UpdateRobotState 
 
 # 지도 load
-map_yaml_file = os.path.join(get_package_share_directory('main_server_gui'), 'map', 'main.yaml')
+map_yaml_file = os.path.join(get_package_share_directory('main_server_gui'), 'map', 'mfc.yaml')
 #map_yaml_file = os.path.join(get_package_share_directory('main_server_gui'), 'map', 'map_hg.yaml')
+
+# 전역 변수 설정
+init_pos_x = 0
+init_pos_y = 0
+robot_position = [init_pos_x,init_pos_y]  # 로봇의 초기 위치(position_x, position_y)
+
 
 def get_mysql_connection():
     try:
@@ -119,107 +126,125 @@ class RobotStateWindow(QtWidgets.QDialog):
         }  
 
     def init_map(self):
-        with open(map_yaml_file) as f:
-            self.map_yaml_data = yaml.full_load(f)        
 
-        print(self.map.width(), self.map.height())        # 485, 485  <--- from Qt
+        # 이미지 불러오기
+        with open(map_yaml_file) as f:
+            self.map_yaml_data = yaml.full_load(f)   
+        self.pixmap = QPixmap(os.path.join(get_package_share_directory('main_server_gui'), 'map', self.map_yaml_data['image']))
+
+        # UI로부터 맵 크기 불러오기
+        print(self.map.width(), self.map.height())        # 380, 190  <--- from Qt
         print('-----------------------------')
 
-        self.image_scale = 1
-        self.pixmap = QPixmap(os.path.join(get_package_share_directory('main_server_gui'), 'map', self.map_yaml_data['image']))
-        self.scaled_pixmap = self.pixmap.scaled(int(self.map.width() * self.image_scale), int(self.map.height() * self.image_scale), Qt.KeepAspectRatioByExpanding)#Qt.KeepAspectRatio)
-        
+        # 이미지 크기 가져오기
         self.height = self.pixmap.size().height()
         self.width = self.pixmap.size().width()
-
-        print(self.width, self.height)                      # 67 99  <--- from PGM file 
-        print(self.scaled_pixmap.size())                    # PyQt5.QtCore.QSize(485, 716) = (width, height)
+        print(self.width, self.height)                      # 38 76  <--- from PGM file 
         print('-----------------------------')
 
+        # map resolution 및 origin 설정
         self.map_resolution = self.map_yaml_data['resolution']
         self.map_origin = self.map_yaml_data['origin'][:2]
-        print(self.map_origin[0], self.map_origin[1])       # -0.251 -1.82
+
+        print(self.map_origin[0], self.map_origin[1])       # -0.461 -1.85
         print('--------------------------------')
+
+        # 이미지 스케일 설정
+        self.image_scale = 12
+        
+        # 이미지 변환 (-90도 회전)
+        transform = QTransform().rotate(-90)
+        rotated_pixmap = self.pixmap.transformed(transform)
+        
+        # 이미지 이동 설정 
+        translated_pixmap = QPixmap(rotated_pixmap.size())         # 동일한 크기의 빈 'translated_pixmap'
+        self.painter = QPainter(translated_pixmap)
+        move_x = 0      
+        move_y = 0      
+        #self.painter.drawPixmap(-move_x, -move_y, rotated_pixmap)  # x 좌표를 -로 설정하여 왼쪽으로 이동
+        self.painter.drawPixmap(move_x, -move_y, rotated_pixmap)    # x 좌표를 -로 설정하여 왼쪽으로 이동
+        self.painter.end()
+        
+        # QLabel 크기에 맞게 이미지 조정 및 설정
+        scaled_pixmap = translated_pixmap.scaled(self.width * self.image_scale, self.height * self.image_scale, Qt.KeepAspectRatio)
+        self.map_label.setPixmap(scaled_pixmap)
+
         self.update_map()
 
-    # def init_map(self):
-    #     with open(map_yaml_file) as f:
-    #         self.map_yaml_data = yaml.full_load(f)        
-
-    #     print(self.map.width(), self.map.height())        # 485, 448
-    #     print('-----------------------------')
-
-    #     self.image_scale = 1
-    #     self.pixmap = QPixmap(os.path.join(get_package_share_directory('main_server_gui'), 'map', self.map_yaml_data['image']))
-    #     self.scaled_pixmap = self.pixmap.scaled(int(self.map.width() * self.image_scale), int(self.map.height() * self.image_scale), Qt.KeepAspectRatioByExpanding)#Qt.KeepAspectRatio)
-        
-    #     self.height = self.pixmap.size().height()
-    #     self.width = self.pixmap.size().width()
-
-    #     print(self.scaled_pixmap.size())                    # PyQt5.QtCore.QSize(485, 448) = (width, height)
-    #     print(self.width, self.height)                      # 105 97
-    #     print('-----------------------------')
-
-    #     self.map_resolution = self.map_yaml_data['resolution']
-    #     self.map_origin = self.map_yaml_data['origin'][:2]
-    #     self.update_map()
-
     def update_map(self):
-        self.scaled_pixmap = self.pixmap.scaled(int(self.map.width() * self.image_scale), int(self.map.height() * self.image_scale), Qt.KeepAspectRatioByExpanding)#Qt.KeepAspectRatio)
-        painter = QPainter(self.scaled_pixmap)
+        global robot_position
+
+        # 기존 pixmap을 기반으로 QPixmap 생성
+        updated_pixmap = QPixmap(self.map_label.pixmap())
+        self.painter = QPainter(updated_pixmap)
 
         # 로봇 번호 표시
         self.font = QFont()
         self.font.setBold(True)
         self.font.setPointSize(13)
-        painter.setFont(self.font)
+        self.painter.setFont(self.font)
 
         # 1번 로봇 좌표
         try:
             amcl_1 = self.amcl_pose_queue.get_nowait()
-            #position = amcl_1.pose.pose.position
-            #orientation = amcl_1.pose.pose.orientation
-            # print("It's from robotstatewindow.py")
-            # print(f"Position(x: {position.x}, y: {position.y}, z: {position.z})")
-            # print(f'Orientation(x: {orientation.x}, y: {orientation.y}, z: {orientation.z}, w: {orientation.w})')
-            # print('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR')
+
+            position = amcl_1.pose.pose.position
+            orientation = amcl_1.pose.pose.orientation
+
+            robot_position[0] = position.x
+            robot_position[1] = position.y
+
+            print("It's from robotstatewindow.py")
+            print(f"Position(x: {robot_position[0]}, y: {robot_position[1]}, z: {position.z})")
+            print(f'Orientation(x: {orientation.x}, y: {orientation.y}, z: {orientation.z}, w: {orientation.w})')
+            print('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR')
+
         except queue.Empty:
             amcl_1 = None
 
+        # amcl_pose subscribe 후
         if amcl_1:
-            self.draw_robot(painter, amcl_1, Qt.red, '1')
+            self.draw_robot(Qt.red, '1')
+        # amcl_pose subscribe 전
+        else:
+            self.draw_robot(Qt.green, '1', initial=True)
 
-        painter.end()
-        self.map.setPixmap(self.scaled_pixmap)
+        # QPainter 종료
+        self.painter.end()
+        # QLabel에 업데이트된 pixmap 설정
+        self.map_label.setPixmap(updated_pixmap)
 
-    def draw_robot(self, painter, amcl, color, label):
-        x, y = self.calc_grid_position(amcl.pose.pose.position.x, amcl.pose.pose.position.y)
-        #x, y = self.calc_grid_position(0.0, 0.0) # test용
-        painter.setPen(QPen(color, 13, Qt.SolidLine))
-        painter.drawPoint(int((self.width - x) * self.image_scale), int(y * self.image_scale))
-        painter.drawText(int((self.width - x) * self.image_scale - 30), int(y * self.image_scale + 5), label)
+    def draw_robot(self, color, label, initial=False):
+        if initial:
+            x, y = self.calc_grid_position(init_pos_x, init_pos_y)      # (0,0) -> (46.1, 185.0)
+        else:
+            x, y = self.calc_grid_position(robot_position[0], robot_position[1])
 
-    # def calc_grid_position(self, x, y):
-    #     x_offset = -85
-    #     y_offset = 85
-    #     x_grid = x_offset + ((x * 3.2 - self.map_origin[0]) / 0.05 )
-    #     y_grid = y_offset + ((y * 3.0 - self.map_origin[1]) / 0.05 )
-
-    #     return x_grid, y_grid
+        # # 로봇 번호 표시
+        # self.font = QFont()
+        # self.font.setBold(True)
+        # self.font.setPointSize(13)
+        # self.painter.setFont(self.font)
+        self.painter.setPen(QPen(color, 13, Qt.SolidLine))
+        # self.painter.drawPoint(x+190, y)
+        # self.painter.drawText(x+180, y-10, label)
+        # x와 y를 스왑하고 y 좌표를 반전시켜서 올바른 방향으로 그리기
+        self.painter.drawPoint(self.map_label.pixmap().height() - y + 190, self.map_label.pixmap().height() - x)
+        self.painter.drawText(self.map_label.pixmap().height() - y +180, self.map_label.pixmap().height() - x - 10, label)
+        # self.painter.drawPoint(int((self.width - x) * self.image_scale), int(y * self.image_scale))
 
     def calc_grid_position(self, x, y):
-        # 맵의 해상도 (meters/pixel)
-        resolution = self.map_resolution  # 예: 0.05
+        # print("변환 전\n")
+        # print(x, y)
+        # print('**************************')
 
-        # 맵의 원점 (meters)
-        origin_x = self.map_origin[0]  # 예: -0.251
-        origin_y = self.map_origin[1]  # 예: -1.82
+        pos_x = ((x - self.map_origin[0]) / self.map_resolution) * 5
+        pos_y = ((y - self.map_origin[1]) / self.map_resolution) * 5
 
-        # 실제 좌표를 픽셀 좌표로 변환
-        x_grid = (x - origin_x) / resolution
-        y_grid = (y - origin_y) / resolution
+        # print("변환 후\n")
+        # print(pos_x, pos_y)
 
-        return x_grid, y_grid
+        return int(pos_x), int(pos_y)
     
     def find_map_label(self):
         self.map_label = self.findChild(QtWidgets.QLabel, 'map')
