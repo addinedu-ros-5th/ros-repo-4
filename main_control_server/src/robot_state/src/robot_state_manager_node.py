@@ -1,32 +1,21 @@
 #!/usr/bin/env python3
-import rclpy
-from rclpy.node import Node
-from rclpy.action import ActionServer
-import math
-import time
 import sys
 import os
-# Connect 클래스 인스턴스 생성
-from modules.connect import *
-# AmclSubscriber 클래스 인스턴스 생성
-network_manager_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../network_manager/lib/network_manager'))
-sys.path.append(network_manager_path)
+import threading
+import queue
+import time
 
-# 경로 출력
-print("Network Manager Path:", network_manager_path)
-print("sys.path:", sys.path)
-from communication_robot_node import AmclSubscriber 
-
-# 서비스 서버.
-from robot_state.srv import UpdateDB
-# 로봇에게 task allocate할 메세지 타입.
-from task_manager.msg import SendAllocationResults
-from std_msgs.msg import String
-# 사용자 정의된 로봇(액션 클라이언트)과 액션 통신 메세지 타입.
-from robot_state.action import RobotTask
-
+import rclpy
+from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 
+from modules.connect import *
+from robot_task_client import RobotTaskClient
+
+# 서비스 서버
+from robot_state.srv import UpdateDB
+# Task Manager로부터 오는 메세지 타입
+from task_manager.msg import SendAllocationResults
 
 def get_mysql_connection():
     try:
@@ -49,30 +38,30 @@ class UpdateRobotState():
         robot_data = self.fetchDataQuery(query)
         return robot_data
 
-class TellTaskManager(Node):
+## Version 1.
+Robot_Name = "Debugging"
+Goal_Location = "Debugging"
+Task_Assignment = "Debugging"
+isTaskAssigned = False
+
+class MFCRobotManager(Node):
     def __init__(self):
-        super().__init__('tell_task_manager_service')
+        super().__init__('mfc_robot_manager')
         self.db_instance = get_mysql_connection()
         self.update_robot_state = UpdateRobotState(self.db_instance)
 
-        # 'UpdateDB' 메세지 타입의 서비스 서버
-        self.server = self.create_service(UpdateDB, 'update_db', self.callback_service)
-
-        # 'SendAllocationResults' 메세지 타입의 subscriber
-        self.allocation_results_subscription = self.create_subscription(
+        # 'UpdateDb' 메세지 타입 서비스 서버
+        self.server = self.create_service(UpdateDB, 'update_db', self.update_db_callback)
+        # 'SendAllocationResults' 메세지 타입 subscriber
+        self.allocation_results_sub = self.create_subscription(
             SendAllocationResults,
             'send_allocation_results',
             self.task_assignment_callback,
             10)
         
-        self.publisher_pose_commands = self.create_publisher(String, 'pose_commands', 10)
-
-        # self.robot_name = None
-        # self.goal_location = None
-
-    def callback_service(self, request, response):
+    def update_db_callback(self, request, response):
         # 디버깅용
-        print(f"Request : \n{request}")
+        print(f"Request : , \n{request}")
         print('\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\')
 
         ## 여기에 mysql문으로 불러온 것 필요
@@ -92,61 +81,128 @@ class TellTaskManager(Node):
         response.battery_status = robot_data[0][2]
    
         return response
-    
+
     def task_assignment_callback(self, msg):
-        self.get_logger().info(f'Received task assignment for robot: {msg.robot_name}')  # Robo1
-        self.get_logger().info(f'Goal Location: {msg.goal_location}')                    # I1
-        self.get_logger().info(f'Task Assignment: {msg.task_assignment}')                # 입고
-
-        pose_command = String()
-        pose_command.data = msg.goal_location
-        self.publisher_pose_commands.publish(pose_command)
-        self.get_logger().info(f'Published pose command: {pose_command.data}')
-        ##############################여기다가 robot_state_manager -> robot으로 robot_name goal_location 전달##############################
-        # self.robot_name = msg.robot_name
-        # self.goal_location = msg.goal_location
-        # self.task_assignment = msg.task_assignment
-
-# class TaskManagerSub_Action(TellTaskManager):
-#     def __init__(self):
-#         super().__init__()
-#         self.amcl_subscriber = AmclSubscriber()
-#         self.amcl_1 = self.amcl_subscriber.get_amcl_pose()
-
-    
-# class MFCRobotServer(Node):
-#     def __init__(self):
-# 	  ## 구독자 노드 이름 설정
-#       super().__init__('mfc_robot_action_server')
-#       self.total_dist = 0 
-#       self.is_first_time = True 
-#       self._action_server = ActionServer(
-#             self,
-#             RobotTask,
-#             'mfc_robot',
-#             self.execute_callback)
+        global isTaskAssigned
+        global Robot_Name
+        global Goal_Location
+        global Task_Assignment
         
-    
+        self.get_logger().info(f'Received task assignment for robot: {msg.robot_name}')
+        self.get_logger().info(f'Goal Location: {msg.goal_location}')
+        self.get_logger().info(f'Task Assignment: {msg.task_assignment}')
+        ##############################여기 아래에 robot_name & goal_location 전달##############################
+        
+        isTaskAssigned = True
+        Robot_Name = msg.robot_name
+        Goal_Location = msg.goal_location
+        Task_Assignment = msg.task_assignment
+        
+        print(f"It's in TellTaskManager")
+        print(Robot_Name, Goal_Location, Task_Assignment)
+        print('################################################################')
+
 def main(args=None):
-    db_instance = get_mysql_connection()
-    update_robot_state = UpdateRobotState(db_instance)
-
-    ## Case 1.
-    # query_A = "SELECT * FROM Robot_manager WHERE  Robot_Name = 'Robo1'"
-    # robot_data = update_robot_state.loadDataFromDB(query_A)
-
-    ## Case 2.
-    # query2 = "SELECT * FROM Robot_manager WHERE Robot_Name = 'Robo1' ORDER BY Time DESC LIMIT 1;"
-    # robot_data = update_robot_state.loadDataFromDB(query2)
-    # robot_status = robot_data[0][3] 
-    # print(robot_status)
-
-    db_instance.disConnection()
+    global Robot_Name
+    global Goal_Location
+    global isTaskAssigned
 
     rclpy.init(args=args)
-    node = TellTaskManager()
-    rclpy.spin(node)
-    rclpy.shutdown()
+    executor = MultiThreadedExecutor()
+
+    node1 = MFCRobotManager()
+    node2 = RobotTaskClient()
+
+    executor.add_node(node1)
+    executor.add_node(node2)
+
+    print("Update 전 초기값")
+    print(Robot_Name, Goal_Location, Task_Assignment)
+    print('################################################################')
+    
+    try:
+        while rclpy.ok():
+            executor.spin_once(timeout_sec=0.1)
+            if isTaskAssigned:
+                node2.send_goal(Goal_Location, Robot_Name)
+                # Send goal only once
+                isTaskAssigned = False
+        print("Update 후")
+        print(Robot_Name, Goal_Location, Task_Assignment)
+        print('################################################################')
+    finally:
+        executor.shutdown()
+        node1.destroy_node()
+        node2.destroy_node()
+        rclpy.shutdown()
+# ----------------------------------------------------------------------------------------------------------------------------
+## Version 2.
+## 'task_assignment_callback' 호출될 때마다 다른 'msg.robot_name' 등 보내기
+# class MFCRobotManager(Node):
+#     def __init__(self, node2):
+#         super().__init__('mfc_robot_manager')
+#         self.db_instance = get_mysql_connection()
+#         self.update_robot_state = UpdateRobotState(self.db_instance)
+#         self.node2 = node2
+
+#         # 'UpdateDb' 메세지 타입 서비스 서버
+#         self.server = self.create_service(UpdateDB, 'update_db', self.update_db_callback)
+#         # 'SendAllocationResults' 메세지 타입 subscriber
+#         self.allocation_results_sub = self.create_subscription(
+#             SendAllocationResults,
+#             'send_allocation_results',
+#             self.task_assignment_callback,
+#             10)
+        
+#     def update_db_callback(self, request, response):
+#         # 디버깅용
+#         print(f"Request : , \n{request}")
+#         print('\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\')
+
+#         ## 여기에 mysql문으로 불러온 것 필요
+#         robot_name = request.robot_name
+
+#         # timestamp 기준으로 각 로봇 최신 상태 대한 query문  
+#         query = f"SELECT Robot_Name, Status, Battery_Status FROM Robot_manager WHERE Robot_Name = '{robot_name}' ORDER BY Time DESC LIMIT 1;"
+             
+#         robot_data = self.update_robot_state.loadDataFromDB(query)
+#         self.db_instance.disConnection()
+
+#         response.robot_name = robot_data[0][0]
+#         response.status = robot_data[0][1]
+#         response.battery_status = robot_data[0][2]
+   
+#         return response
+
+#     def task_assignment_callback(self, msg):
+#         self.get_logger().info(f'Received task assignment for robot: {msg.robot_name}')
+#         self.get_logger().info(f'Goal Location: {msg.goal_location}')
+#         self.get_logger().info(f'Task Assignment: {msg.task_assignment}')
+
+#         # goal을 보내기 위해 node2 사용
+#         self.node2.send_goal(msg.goal_location, msg.robot_name)
+        
+#         print(f"It's in TellTaskManager")
+#         print(msg.robot_name, msg.goal_location, msg.task_assignment)
+#         print('################################################################')
+
+# def main(args=None):
+#     rclpy.init(args=args)
+#     executor = MultiThreadedExecutor()
+
+#     node2 = RobotTaskClient()
+#     node1 = MFCRobotManager(node2)
+
+#     executor.add_node(node1)
+#     executor.add_node(node2)
+    
+#     try:
+#         executor.spin()
+#     finally:
+#         executor.shutdown()
+#         node1.destroy_node()
+#         node2.destroy_node()
+#         rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
