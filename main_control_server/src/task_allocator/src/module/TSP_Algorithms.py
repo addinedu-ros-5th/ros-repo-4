@@ -1,167 +1,125 @@
 import random
 from collections import Counter
 import numpy as np
-from itertools import permutations
-import matplotlib.pyplot as plt
-import networkx as nx
-from matplotlib.animation import FuncAnimation
+from itertools import combinations
+import time
 
 # 6개의 원을 3행 2열로 배치
 positions = {
-    0: (0, 0),
-    1: (0, 1),
-    2: (1, 0),
-    3: (1, 1),
-    4: (2, 0),
-    5: (2, 1)
+    'RD': (0, 0),
+    'RA': (0, 1),
+    'RE': (1, 0),
+    'RB': (1, 1),
+    'RC': (2, 0),
+    'RF': (2, 1)
 }
 
-
-
 # 원 선택 함수
-def select_nodes(max_n, max_copies):
+def select_nodes(min_n, max_n, max_copies):
     selected_nodes = []
-    while len(selected_nodes) < max_n:
+    num_nodes = random.randint(min_n, max_n)
+    while len(selected_nodes) < num_nodes:
         node = random.choice(list(positions.keys()))
         if selected_nodes.count(node) < max_copies:
             selected_nodes.append(node)
     return selected_nodes
 
-# 두 대의 로봇에게 품목을 나누어 주기
-def distribute_items_among_robots(selected_items):
-    item_counts = Counter(selected_items)
-    robot1, robot2 = [], []
-
-    for item, count in item_counts.items():
-        while count > 0:
-            if len(robot1) < 3:
-                robot1.append(item)
-            elif len(robot2) < 3:
-                robot2.append(item)
-            else:
-                break
-            count -= 1
-
-    return robot1, robot2
-
-# 로봇 동선을 위한 전체 계획 세우기
-def plan_robot_routes(selected_items):
-    tasks = []
-    while selected_items:
-        robot1, robot2 = distribute_items_among_robots(selected_items[:6])
-        tasks.append((robot1, robot2))
-        selected_items = selected_items[6:]
-    return tasks
-
 # 거리 행렬 생성 함수
 def create_distance_matrix(nodes, positions):
-    n = len(nodes)
+    unique_nodes = list(set(nodes))
+    n = len(unique_nodes)
     dists = np.zeros((n, n))
-    for i, u in enumerate(nodes):
-        for j, v in enumerate(nodes):
+    for i, u in enumerate(unique_nodes):
+        for j, v in enumerate(unique_nodes):
             if i != j:
                 dists[i][j] = np.linalg.norm(np.array(positions[u]) - np.array(positions[v]))
-    return dists
+    return dists, unique_nodes
 
-# 최적 경로를 계산하는 함수 (Brute Force)
-def find_optimal_path(dists):
-    n = len(dists)
-    best_path = None
-    min_length = float('inf')
+# 경로 길이 계산 함수
+def calculate_path_length(path, dists):
+    length = 0
+    for i in range(len(path) - 1):
+        length += dists[path[i]][path[i + 1]]
+    length += dists[path[-1]][path[0]]  # 마지막 위치에서 시작 위치로 돌아오는 거리 추가
+    return length
 
-    for perm in permutations(range(n)):
-        length = sum(dists[perm[i]][perm[i + 1]] for i in range(n - 1))
-        length += dists[perm[-1]][perm[0]]  # 돌아오는 길
-        if length < min_length:
-            min_length = length
-            best_path = perm
+# 최근접 이웃 알고리즘 함수
+def nearest_neighbor_algorithm(nodes, dists, start_index=0):
+    path = [start_index]
+    visited = {start_index}
+    while len(path) < len(nodes):
+        last = path[-1]
+        next_node = min((dists[last][i], i) for i in range(len(nodes)) if i not in visited)[1]
+        path.append(next_node)
+        visited.add(next_node)
+    return path, calculate_path_length(path, dists)
 
-    return best_path, min_length
+# 두 로봇의 경로 최적화 함수
+def optimize_two_robots_prioritize(selected_nodes, positions):
+    n = len(selected_nodes)
+    best_total_length = float('inf')
+    best_paths = None
 
-# 각 로봇의 품목에 대한 최적 경로 계산
-def get_optimal_paths_for_tasks(tasks, positions):
-    results = []
-    for task in tasks:
-        task_results = []
-        for robot_items in task:
-            if robot_items:
-                unique_items = list(set(robot_items))
-                dists = create_distance_matrix(unique_items, positions)
-                best_path, min_length = find_optimal_path(dists)
-                task_results.append((robot_items, [unique_items[i] for i in best_path], min_length))
-        results.append(task_results)
-    return results
+    # 노드 인덱스 리스트 생성
+    indices = list(range(n))
+    start_nodes = {'RD', 'RE', 'RF'}
 
-# 경로 애니메이션 함수
-def animate_paths(optimal_paths, positions):
-    G = nx.Graph()
-    pos = positions
+    # 가능한 모든 조합을 나누어 두 그룹으로 나누기
+    for comb in combinations(indices, n // 2):
+        set1 = list(comb)
+        set2 = [i for i in indices if i not in set1]
 
-    for node in positions.keys():
-        G.add_node(node, pos=positions[node])
+        # 거리 행렬 생성
+        nodes1 = [selected_nodes[i] for i in set1]
+        nodes2 = [selected_nodes[i] for i in set2]
+        dists1, unique_nodes1 = create_distance_matrix(nodes1, positions)
+        dists2, unique_nodes2 = create_distance_matrix(nodes2, positions)
 
-    fig, ax = plt.subplots()
-    nx.draw(G, pos, with_labels=True, node_color='lightgreen', node_size=500, ax=ax)
-    lines = [ax.plot([], [], color=color, lw=2)[0] for color in ['red', 'blue']]
-    points = [ax.plot([], [], 'o', color=color)[0] for color in ['red', 'blue']]
+        # 시작 인덱스 설정
+        start_index1 = next((i for i, node in enumerate(unique_nodes1) if node in start_nodes), 0)
+        start_index2 = next((i for i, node in enumerate(unique_nodes2) if node in start_nodes), 0)
 
-    def init():
-        for line in lines:
-            line.set_data([], [])
-        for point in points:
-            point.set_data([], [])
-        return lines + points
+        # 최적 경로 계산 (근사 알고리즘 사용)
+        path1, length1 = nearest_neighbor_algorithm(unique_nodes1, dists1, start_index1)
+        path2, length2 = nearest_neighbor_algorithm(unique_nodes2, dists2, start_index2)
 
-    def update(num):
-        for line, point, task_results in zip(lines, points, optimal_paths):
-            if task_results:
-                robot_items, optimal_path, _ = task_results
-                if optimal_path:
-                    path = []
-                    for i in range(len(optimal_path) - 1):
-                        path.append((optimal_path[i], optimal_path[i + 1]))
-                    path.append((optimal_path[-1], optimal_path[0]))
+        total_length = length1 + length2
 
-                    segment_length = 10  # number of frames per segment
-                    segment_index = num // segment_length
-                    segment_progress = (num % segment_length) / segment_length
+        if total_length < best_total_length:
+            best_total_length = total_length
+            best_paths = (unique_nodes1, path1, length1), (unique_nodes2, path2, length2)
 
-                    if segment_index < len(path):
-                        u, v = path[segment_index]
-                        x0, y0 = positions[u]
-                        x1, y1 = positions[v]
-                        x = x0 + segment_progress * (x1 - x0)
-                        y = y0 + segment_progress * (y1 - y0)
-                        point.set_data([x], [y])
-                        line.set_data([positions[optimal_path[i]][0] for i in range(segment_index + 1)] + [x],
-                                      [positions[optimal_path[i]][1] for i in range(segment_index + 1)] + [y])
-        return lines + points
+    # 같은 노드를 한 번에 방문하도록 수정
+    def expand_path(path, nodes):
+        expanded_path = []
+        for i in path:
+            node = nodes[i]
+            expanded_path.extend([node] * selected_nodes.count(node))
+        return expanded_path
 
-    ani = FuncAnimation(fig, update, init_func=init, frames=len(positions) * 10, interval=100, repeat=False)
-    plt.show()
+    expanded_best_paths = [(expand_path(best_paths[0][1], best_paths[0][0]), best_paths[0][2]),
+                           (expand_path(best_paths[1][1], best_paths[1][0]), best_paths[1][2])]
+
+    return expanded_best_paths, best_total_length
 
 # 메인 함수
-def main():
-    # 랜덤으로 최대 18개의 원 선택, 같은 원은 최대 3개까지
-    selected_items = select_nodes(18, 3)
+def main_prioritize():
+    # 랜덤으로 최소 6개에서 최대 18개의 원 선택, 같은 원은 최대 3개까지
+    selected_items = select_nodes(6, 18, 3)
     print("Selected Items:", selected_items)
     print("Item Counts:", Counter(selected_items))
 
-    # 두 로봇의 동선 계획
-    tasks = plan_robot_routes(selected_items)
-    for i, (robot1, robot2) in enumerate(tasks):
-        print(f"Task {i+1} - Robot 1 Items: {robot1}, Robot 2 Items: {robot2}")
+    # 두 로봇의 동선 최적화
+    start_time = time.time()
+    optimal_paths, best_total_length = optimize_two_robots_prioritize(selected_items, positions)
+    end_time = time.time()
 
-    # 최적 경로 출력
-    optimal_paths = get_optimal_paths_for_tasks(tasks, positions)
-    for i, task_results in enumerate(optimal_paths):
-        for j, (robot_items, optimal_path, min_length) in enumerate(task_results):
-            print(f"Task {i+1} - Robot {j+1} Items: {robot_items}")
-            print(f"  Optimal Path: {optimal_path}")
-            print(f"  Minimum Length: {min_length}")
+    print(f"Best Total Length: {best_total_length}")
+    for i, (path, length) in enumerate(optimal_paths):
+        print(f"Robot {i+1} Path: {path}")
+        print(f"Path Length: {length}")
 
-    # 경로 애니메이션
-    animate_paths(optimal_paths[0], positions)  # 첫 번째 작업의 경로를 애니메이션으로 표시
+    print(f"Calculation Time: {end_time - start_time:.6f} seconds")
 
 if __name__ == "__main__":
-    main()
+    main_prioritize()
