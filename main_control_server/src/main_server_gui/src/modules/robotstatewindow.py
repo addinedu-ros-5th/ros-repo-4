@@ -18,11 +18,11 @@ from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PoseWithCovarianceStamped
 
 # 현재 파일의 디렉토리 경로를 기준으로 network_manager/lib/network_manager 경로를 추가
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../network_manager/lib/network_manager')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../network_manager/lib/network_manager')))
 from communication_robot_node import AmclSubscriber 
 
 # 현재 파일의 디렉토리 경로를 기준으로 network_manager/lib/network_manager 경로를 추가
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../robot_state/lib/robot_state')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../robot_state/lib/robot_state')))
 from robot_state_manager_node import UpdateRobotState 
 
 # 지도 load
