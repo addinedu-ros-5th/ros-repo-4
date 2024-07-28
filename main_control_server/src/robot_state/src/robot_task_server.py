@@ -52,6 +52,7 @@ class RobotTaskServer(Node):
         super().__init__('robot_task_server')
         self._action_server = ActionServer(self, RobotTask, 'robot_action', self.robot_task_callback)
         self.cnt = 0
+        self.isClientSent = False
         self.isTaskComplete = False
 
     def robot_task_callback(self, goal_handle):
@@ -59,8 +60,13 @@ class RobotTaskServer(Node):
         self.get_logger().info('Executing goal...')
 
         goal_msg = goal_handle.request
-        self.get_logger().info(f'Client sent: robot_name={goal_msg.robot_name}, goal_location={goal_msg.goal_location}')
-        
+
+        while (self.isClientSent == False):
+            if goal_msg.robot_name != "Debugging":
+                self.get_logger().info(f'Client sent: robot_name={goal_msg.robot_name}, goal_location={goal_msg.goal_location}')
+                self.isClientSent = True
+                break
+
         while(1):
             if self.cnt == 60 or current_pose[0] != -10.0:
                 self.get_logger().info(f'Current_pose: pos_x = {current_pose[0]}, pos_y = {current_pose[1]}')
@@ -79,7 +85,7 @@ class RobotTaskServer(Node):
             goal_handle.publish_feedback(feedback_msg)
         
             ## 목표 지점 근처에 도달했을 때 ADJUSTING 상태로 전환
-            if feedback_msg.remaining_distance < 0.2:
+            if feedback_msg.remaining_distance < 0.45:
                 self.get_logger().info(f'ADJUSTING MODE')
                 ### ADJUSTING 상태 관련 코드 
                 #### ------------------------------------- 
