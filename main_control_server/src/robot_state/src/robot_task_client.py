@@ -6,15 +6,18 @@ import sys
 import queue
 import threading
 from rclpy.node import Node
-
 from rclpy.action import ActionClient
 # Robot에 보내야 하는 메세지 타입
 from robot_state.action import RobotTask
+from std_msgs.msg import String
 
 class RobotTaskClient(Node):
     def __init__(self):
         super().__init__("robot_task_client")
+        # Action Client
         self._action_client = ActionClient(self, RobotTask, "robot_action")
+        # Publisher
+        self.result_publisher = self.create_publisher(String, 'result_topic', 10)
 
     def send_goal(self, goal_location, robot_name):
         goal_msg = RobotTask.Goal()
@@ -44,7 +47,12 @@ class RobotTaskClient(Node):
         result = future.result().result
         if result.result_msg == 'done':
             self.get_logger().info(f"Result: {result.result_msg}")
-            rclpy.shutdown()
+            self.publish_result(result.result_msg)
+
+    def publish_result(self, result_msg):
+        result = String()
+        result.data = result_msg
+        self.result_publisher.publish(result)
 
 def main(args=None):
     rclpy.init(args=args)
