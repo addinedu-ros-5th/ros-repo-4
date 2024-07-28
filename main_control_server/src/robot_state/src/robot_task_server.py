@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# This is the updated version of 'robot_task_server.py'
+
 import math
 import time
 import threading
