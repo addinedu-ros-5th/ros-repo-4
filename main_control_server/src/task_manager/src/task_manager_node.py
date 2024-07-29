@@ -3,12 +3,13 @@
 import rclpy
 from rclpy.node import Node
 
-from order_list import OrderList  
+from module.order_list import OrderList  
 
 from task_manager.msg import DbUpdate, GuiUpdate
 from task_manager.msg import StartInspection, InspectionComplete, SendAllocationResults
 from task_manager.srv import GenerateOrder, AllocatorTask
 from robot_state.srv import UpdateDB
+# from task_allocator.src.data.location_data import *
 
 import mysql.connector as con
 
@@ -84,19 +85,43 @@ class OrderListService(Node):
 
     def generate_order_callback(self, request, response):
         random_items = self.order_list_node.get_random_order_list()  # 랜덤 주문 리스트 생성
+        
+        product_to_location = {
+            "P01": "R_A1", "P02": "R_A2", "P03": "R_A3",
+            "P04": "R_B1", "P05": "R_B2", "P06": "R_B3",
+            "P07": "R_C1", "P08": "R_C2", "P09": "R_C3",
+            "P10": "R_D1", "P11": "R_D2", "P12": "R_D3",
+            "P13": "R_E1", "P14": "R_E2", "P15": "R_E3",
+            "P16": "R_F1", "P17": "R_F2", "P18": "R_F3",
+        }
 
+        warehouses = []
+        racks = []
+        cells = []
+
+        for item in random_items:
+            location = product_to_location.get(item.item_id, "R_A1")  # 기본값으로 "R_A1" 설정
+            warehouse, rack, cell = location.split("_")[1][0], location.split("_")[1], location.split("_")[1][1]
+            
+            warehouses.append(f"{warehouse}구역")
+            racks.append(rack)
+            cells.append(cell)
+        
         response.item_ids = [str(item.item_id) for item in random_items]
         response.names = [item.name for item in random_items]
         response.quantities = [item.quantity for item in random_items]
-        response.warehouses = ["A구역" for _ in random_items]  # 임의로 Warehouse 설정
-        response.racks = ["A-1" for _ in random_items]  # 임의로 Rack 설정
-        response.cells = ["2" for _ in random_items]  # 임의로 Cell 설정
+        response.warehouses = warehouses
+        response.racks = racks
+        response.cells = cells
         response.statuses = ["입하완료" for _ in random_items]  # 임의로 Status 설정
         
         self.get_logger().info(f'Received request: {request}')
         self.get_logger().info(f'Sending response: {response}')
         
         return response
+
+
+
 
     def db_update_callback(self, msg):
         self.get_logger().info(f'Received DB update status: {msg.status}')
