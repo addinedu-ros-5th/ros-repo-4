@@ -1,0 +1,81 @@
+# Name of the domain bridge, used for node naming and logging
+# server: 48
+# robot_1_ID: 40
+# robot_2_ID: 88
+name: domain_bridge
+
+topics:
+  amcl_pose:
+    type: geometry_msgs/msg/PoseWithCovarianceStamped
+    from_domain: 40
+    to_domain: 48
+    remap: amcl_pose_robot_1
+  amcl_pose:
+    type: geometry_msgs/msg/PoseWithCovarianceStamped
+    from_domain: 88
+    to_domain: 48
+    remap: amcl_pose_robot_2
+
+    # 로봇 1 (도메인 40)의 image_raw 토픽을 구독하고 리매핑합니다.
+  image_raw:
+    type: sensor_msgs/msg/Image
+    from_domain: 40
+    to_domain: 48
+    remap: image_raw_robot_1
+
+  # 로봇 2 (도메인 88)의 image_raw 토픽을 구독하고 리매핑합니다.
+  image_raw:
+    type: sensor_msgs/msg/Image
+    from_domain: 88
+    to_domain: 48
+    remap: image_raw_robot_2
+
+
+   # 로봇 1 (도메인 40)의 scan 토픽을 구독하고 리매핑합니다.
+  scan:
+    type: sensor_msgs/msg/LaserScan
+    from_domain: 40
+    to_domain: 48
+    remap: scan_robot_1
+
+  # 로봇 2 (도메인 88)의 scan 토픽을 구독하고 리매핑합니다.
+  scan:
+    type: sensor_msgs/msg/LaserScan
+    from_domain: 88
+    to_domain: 48
+    remap: scan_robot_2
+
+
+  # allocate_task_40:
+  #   type: task_msgs/srv/AllocateTask
+  #   from_domain: 40
+  #   to_domain: 48
+
+  # allocate_task_88:
+  #   type: task_msgs/srv/AllocateTask
+  #   from_domain: 88
+  #   to_domain: 48
+
+    
+    
+  # obstacle:
+  #   type: task_msgs/msg/CurrentPath
+  #   from_domain: 88
+  #   to_domain: 40
+  #   remap: obstacle_robot_1
+  # obstacle:
+  #   type: task_msgs/msg/CurrentPath
+  #   from_domain: 40
+  #   to_domain: 88
+  #   remap: obstacle_robot_2
+
+
+  # task_completion:
+  #   type: task_msgs/msg/TaskCompletion
+  #   from_domain: 40
+  #   to_domain: 48
+
+  # task_completion:
+  #   type: task_msgs/msg/TaskCompletion
+  #   from_domain: 88
+  #   to_domain: 48
