@@ -3,27 +3,30 @@
 import rclpy
 from rclpy.node import Node
 
-from module.order_list import OrderList  
 
 from task_manager.msg import DbUpdate, GuiUpdate
 from task_manager.msg import StartInspection, InspectionComplete, SendAllocationResults
 from task_manager.srv import GenerateOrder, AllocatorTask
+from modules.order_grouping import group_items
+from modules.order_list import OrderList  
 from robot_state.srv import UpdateDB
-# from task_allocator.src.data.location_data import *
 
 import mysql.connector as con
 
 class OrderListService(Node):
     def __init__(self):
+
         super().__init__('order_list_service')
         # 'GenerateOrder' 메세지 타입의 서비스 서버
         self.srv = self.create_service(GenerateOrder, 'generate_order', self.generate_order_callback)
         self.order_list_node = OrderList()
+        self.grouped_items = []
 
         self.inspection_started = False  # 플래그 변수 초기화
         self.inspection_index = 0  # 검수 진행 중인 아이템 인덱스
         self.total_items_to_inspect = 0
         self.inspected_items_count = 0
+
 
 
         # list gui가 db에 저장완료했다고 신호받고 첫행 꺼내오기
@@ -85,7 +88,23 @@ class OrderListService(Node):
 
     def generate_order_callback(self, request, response):
         random_items = self.order_list_node.get_random_order_list()  # 랜덤 주문 리스트 생성
-        
+
+        # 아이템 ID 리스트 생성
+        order_list = [item.item_id for item in random_items]
+
+        # 그룹핑된 아이템 목록 생성
+        grouped_items = group_items(order_list)
+
+        task_code = 1
+        for group in grouped_items:
+            for product_code in group:
+                self.grouped_items.append((task_code,product_code))
+            task_code += 1
+
+        # 그룹핑된 아이템 목록 출력 (디버깅용)
+        for i, (task_code,product_code) in enumerate(self.grouped_items):
+            print(f"Task_{task_code}: {product_code}")
+
         product_to_location = {
             "P01": "R_A1", "P02": "R_A2", "P03": "R_A3",
             "P04": "R_B1", "P05": "R_B2", "P06": "R_B3",
@@ -115,11 +134,10 @@ class OrderListService(Node):
         response.cells = cells
         response.statuses = ["입하완료" for _ in random_items]  # 임의로 Status 설정
         
-        self.get_logger().info(f'Received request: {request}')
-        self.get_logger().info(f'Sending response: {response}')
-        
+        # self.get_logger().info(f'Received request: {request}')
+        # self.get_logger().info(f'Sending response: {response}')
+   
         return response
-
 
 
 
@@ -147,30 +165,26 @@ class OrderListService(Node):
         self.get_logger().info(f"Total item at index { self.total_items_to_inspect}")
         db_connection.disConnection()
 
-    def get_item_from_db(self):
+    def process_next_item(self):
+        if self.inspection_index <= len(self.grouped_items):
+            item_id = self.grouped_items[self.inspection_index][1]
+            product = self.get_item_from_db(item_id)
+            if product:
+                self.send_signal_start_inspection_to_mfc(product)
+            self.inspection_index += 1
+        else:
+            self.inspection_started = False
+            self.get_logger().info('No more items to inspect.')
+
+    def get_item_from_db(self, item_id):
         db_connection = Connect("team4", "0444")
         cursor = db_connection.cursor
-        
-        # 전체 '입하완료' 상태의 항목 로깅
-        cursor.execute("SELECT * FROM Inbound_Manager WHERE Status = '입하완료' ORDER BY No")
-        all_rows = cursor.fetchall()
-        self.get_logger().info(f"All rows with '입하완료' status: {all_rows}")
-        
-        # 인덱스에 해당하는 항목 가져오기
-        cursor.execute("SELECT * FROM Inbound_Manager WHERE Status = '입하완료' ORDER BY No LIMIT 1 OFFSET %s", (self.inspection_index,))
-        self.get_logger().info(f"Processing item at index {self.inspection_index}")
+        cursor.execute("SELECT * FROM Inbound_Manager WHERE Product_Code = %s", (item_id,))
         row = cursor.fetchone()
-        self.get_logger().info(f"Fetched row from DB at index {self.inspection_index}: {row}")
+        self.get_logger().info(f"Fetched row from DB for Product_Code {item_id}: {row}")
         db_connection.disConnection()
         
-        return row
-
-    def process_next_item(self):
-        row = self.get_item_from_db()
-        
         if row:
-            self.inspection_started = True
-            self.get_logger().info(f"Fetched row from DB: {row}") 
             product = {
                 "No": row[0],
                 "Product_Code": row[1],
@@ -181,11 +195,9 @@ class OrderListService(Node):
                 "Receiving_Quant": row[6],
                 "Status": row[7]
             }
-            self.get_logger().info(f"Processing item at index {self.inspection_index}: {product}")
-            self.send_signal_start_inspection_to_mfc(product)
-        else:
-            self.inspection_started = False
-            self.get_logger().info('No more items to inspect.')
+            return product
+        return None
+    
 
     def inspection_complete_callback(self, msg):
         self.get_logger().info(f'Inspection complete for product: {msg.product_code}')

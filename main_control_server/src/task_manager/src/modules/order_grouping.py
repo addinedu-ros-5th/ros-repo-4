@@ -65,11 +65,3 @@ def group_items(order_list):
             tasks.append(task_items)
     
     return tasks
-
-# 입고 리스트 예시
-order_list = ["P02", "P08", "P15", "P10", "P04", "P01", "P03", "P06", "P07"]
-
-# 물품 짝짓기
-tasks = group_items(order_list)
-for i, task in enumerate(tasks):
-    print(f"Task {i+1}: {task}")
