@@ -13,28 +13,30 @@ class TaskAllocator(Node):
 
 
     def handle_allocate_task(self, request, response):
-        self.get_logger().info(f'Received task allocation request for product: {request.product_code}')
-        location_key = product_to_location.get(request.product_code)
+        self.get_logger().info(f'Received task allocation request for product: {request.product_code_list}')
+        product_code_list = request.product_code_list
+        rack_list = []
 
-        if location_key is None:
-            self.get_logger().warn(f'No location found for product code {request.product_code}')
+        for product_code in product_code_list:
+            location_key = product_to_location.get(product_code)
+
+            if location_key is None:
+                self.get_logger().warn(f'No location found for product code {product_code}')
+                continue
+            
+            rack_list.append(location_key)
+
+        if not rack_list:
             response.robot_name = ""
-            response.goal_location = ""
-            response.task_assignment = f"No location found for product code {request.product_code}"
+            response.task_code = request.task_code
+            response.rack_list = []
+            response.task_assignment = f"No valid locations found for product codes {product_code_list}"
             return response
         
-        location_pose = location_key
-
-        if location_pose is None:
-            self.get_logger().warn(f'No pose found for location key {location_key}')
-            response.robot_name = ""
-            response.goal_location = ""
-            response.task_assignment = "No pose found"
-            return response
-        
-        self.get_logger().info(f'{request.task_type}: Location for product code {request.product_code} is {location_pose}')
+        self.get_logger().info(f'{request.task_type}: Locations for product codes {product_code_list} are {rack_list}')
         response.robot_name = "Robo1"
-        response.goal_location = location_pose
+        response.task_code = request.task_code
+        response.rack_list = rack_list
         response.task_assignment = request.task_type
 
         return response

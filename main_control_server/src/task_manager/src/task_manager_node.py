@@ -26,6 +26,8 @@ class OrderListService(Node):
         self.inspection_index = 0  # 검수 진행 중인 아이템 인덱스
         self.total_items_to_inspect = 0
         self.inspected_items_count = 0
+        self.current_task_code = None # 현재 그룹의 task_code를 저장할 변수 추가
+        self.product_code_list = []  # 현재 그룹의 product_code 리스트를 저장할 변수 추가
 
 
 
@@ -102,8 +104,8 @@ class OrderListService(Node):
             task_code += 1
 
         # 그룹핑된 아이템 목록 출력 (디버깅용)
-        for i, (task_code,product_code) in enumerate(self.grouped_items):
-            print(f"Task_{task_code}: {product_code}")
+        for i, (task,item) in enumerate(self.grouped_items):
+            print(f"Task_{task}: {item}")
 
         product_to_location = {
             "P01": "R_A1", "P02": "R_A2", "P03": "R_A3",
@@ -166,12 +168,16 @@ class OrderListService(Node):
         db_connection.disConnection()
 
     def process_next_item(self):
-        if self.inspection_index <= len(self.grouped_items):
-            item_id = self.grouped_items[self.inspection_index][1]
+        if self.inspection_index < len(self.grouped_items):
+            task_code, item_id = self.grouped_items[self.inspection_index]
+            if self.current_task_code != task_code:
+                self.current_task_code = task_code
+                self.product_code_list = []
+            self.product_code_list.append(item_id)
             product = self.get_item_from_db(item_id)
             if product:
                 self.send_signal_start_inspection_to_mfc(product)
-            self.inspection_index += 1
+                self.inspection_index += 1
         else:
             self.inspection_started = False
             self.get_logger().info('No more items to inspect.')
@@ -203,14 +209,15 @@ class OrderListService(Node):
         self.get_logger().info(f'Inspection complete for product: {msg.product_code}')
         self.update_status_in_db(msg.product_code, '검수완료')
         self.send_update_signal_to_gui(msg.product_code, '검수완료')
-        # self.send_task_allocation_request(msg.product_code,"입고")
 
         self.inspected_items_count += 1
-        if self.inspected_items_count == self.total_items_to_inspect:
-            self.get_logger().info('All inspections complete. Sending task allocation requests.')
+
+        # 다음 인덱스가 현재 작업 코드와 다를 경우
+        if (self.inspection_index < len(self.grouped_items) and self.grouped_items[self.inspection_index][0] != self.current_task_code):
+            self.send_task_allocation_request(self.current_task_code, self.product_code_list,"입고")
+            self.product_code_list = [] #list초기화
         else:
             self.process_next_item()
-
 
 
         
@@ -240,12 +247,13 @@ class OrderListService(Node):
         self.get_logger().info(f'Sent GUI update signal for product {product_code} with status {status}')
 
 
-    def send_task_allocation_request(self, product_code,task_type):
+    def send_task_allocation_request(self,  task_code, product_code_list,task_type):
         request = AllocatorTask.Request()
-        request.product_code = product_code
+        request.task_code = f"Task_{task_code}"
+        request.product_code_list = product_code_list
         request.task_type = task_type
         self.future = self.task_allocator_client.call_async(request)
-        self.get_logger().info(f'Sending task allocation request for product_code: {product_code} with task_type: {task_type}')
+        self.get_logger().info(f'Sending task allocation request for task_code: task_{task_code} with product_code_list: {product_code_list}')
         self.future.add_done_callback(self.handle_task_allocation_response)
 
     
