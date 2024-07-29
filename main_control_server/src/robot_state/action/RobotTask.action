@@ -1,12 +1,9 @@
-# Request
-float32 pos_x
-float32 pos_y
-float32 orientation_z
-float32 orientation_w
----
-# Response
+# Request(== Goal) (robot_task_client -> robot_task_server)
 string robot_name
 string goal_location
 ---
-# Feedback
-float32 remained_dist
+# Response(robot_task_server -> robot_task_client)
+string result_msg
+---
+# Feedback(robot_task_server -> robot_task_client)
+float32 remaining_distance 

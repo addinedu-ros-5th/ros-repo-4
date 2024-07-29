@@ -10,21 +10,22 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(geometry_msgs REQUIRED)
-# find_package(network_manager REQUIRED)    # new
-# find_package(robot_state REQUIRED)        # new
-# find_package(task_manager REQUIRED)       # new
+find_package(geometry_msgs REQUIRED)                  # new
+find_package(network_manager REQUIRED)                # new
+find_package(robot_state REQUIRED)                    # new
+find_package(task_manager REQUIRED)                   # new
 
 # Install Python modules
 #ament_python_install_package(${PROJECT_NAME})
 
 # Install Python executables
 install(
-  PROGRAMS 
-    src/robotgoal_test.py
-    src/robotgoal.py
-    src/test_amcl_subscriber.py
-    src/robot_state_manager_node.py
+  PROGRAMS src/robotgoal_test.py
+  PROGRAMS src/robotgoal.py
+  PROGRAMS src/test_amcl_subscriber.py
+  PROGRAMS src/robot_state_manager_node.py 
+  PROGRAMS src/robot_task_server.py                  # new    
+  PROGRAMS src/robot_task_client.py                  # new              
   DESTINATION lib/${PROJECT_NAME}
   PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
               GROUP_EXECUTE GROUP_READ
@@ -34,7 +35,15 @@ install(
 # Add the service files
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/UpdateDB.srv"
-  "action/RobotTask.action"
+  "action/RobotTask.action"                          # new
+  "msg/RobotState.msg"                               # new
+)
+
+# Install Python modules
+install(
+  DIRECTORY src/data
+  DESTINATION lib/${PROJECT_NAME}
+  FILES_MATCHING PATTERN "*.py"
 )
 
 install(
