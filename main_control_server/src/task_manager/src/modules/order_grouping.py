@@ -63,5 +63,7 @@ def group_items(order_list):
         task_items = remaining_items[i:i+3]
         if task_items:
             tasks.append(task_items)
+            used_items.update(task_items)
     
     return tasks
+

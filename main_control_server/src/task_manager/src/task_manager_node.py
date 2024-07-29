@@ -216,8 +216,14 @@ class OrderListService(Node):
         if (self.inspection_index < len(self.grouped_items) and self.grouped_items[self.inspection_index][0] != self.current_task_code):
             self.send_task_allocation_request(self.current_task_code, self.product_code_list,"입고")
             self.product_code_list = [] #list초기화
-        else:
-            self.process_next_item()
+
+        # 모든 검수가 완료되었을 경우
+        if self.inspected_items_count == self.total_items_to_inspect:
+            self.get_logger().info('All inspections complete. Sending task allocation requests.')
+            self.send_task_allocation_request(self.current_task_code, self.product_code_list,"입고")
+
+        # else:
+        self.process_next_item()
 
 
         
@@ -261,17 +267,19 @@ class OrderListService(Node):
         try:
             response = future.result()
             self.get_logger().info(f'Robot Name: {response.robot_name}')
-            self.get_logger().info(f'Goal Location: {response.goal_location}')
+            self.get_logger().info(f'Task Code: {response.task_code}')
+            self.get_logger().info(f'Goal Location: {response.rack_list}')
             self.get_logger().info(f'Task Assignment: {response.task_assignment}')
-            self.send_task_allocation_results(response.robot_name,response.goal_location,response.task_assignment)
+            self.send_task_allocation_results(response.robot_name,response.task_code,response.rack_list,response.task_assignment)
 
         except Exception as e:
             self.get_logger().error(f'Service call failed: {e}')
 
-    def send_task_allocation_results(self, robot_name,goal_location,task_assignment):
+    def send_task_allocation_results(self, robot_name,task_code,rack_list,task_assignment):
         allocation_msg = SendAllocationResults()
         allocation_msg.robot_name = robot_name
-        allocation_msg.goal_location = goal_location
+        allocation_msg.task_code = task_code
+        allocation_msg.rack_list= rack_list
         allocation_msg.task_assignment = task_assignment
         self.publisher_allocation_results.publish(allocation_msg)
         
