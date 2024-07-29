@@ -8,7 +8,7 @@ string task_assignment
 
 ##변경예정
 # string task_code
-# string[] product_code_list  // ['P02', 'P01', 'P03']
+# string[] product_code_list # ['P02', 'P01', 'P03']
 # string task_type
 #---
 # string robot_name  // "Robo1"
