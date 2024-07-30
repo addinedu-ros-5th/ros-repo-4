@@ -52,66 +52,67 @@ class RobotTaskServer(Node):
         super().__init__('robot_task_server')
         self._action_server = ActionServer(self, RobotTask, 'robot_action', self.robot_task_callback)
         self.cnt = 0
-        self.isClientSent = False
-        self.isTaskComplete = False
 
     def robot_task_callback(self, goal_handle):
         global current_pose
-        self.get_logger().info('Executing goal...')
+        self.get_logger().info('Executing goal...')                                                                                    # 8번 출력 
 
+        self.isClientSent = False                   # new
+        self.isTaskComplete = False                 # new
         goal_msg = goal_handle.request
 
-        while (self.isClientSent == False):
+
+        while (self.isClientSent == False):  
             if goal_msg.robot_name != "Debugging":
-                self.get_logger().info(f'Client sent: robot_name={goal_msg.robot_name}, goal_location={goal_msg.goal_location}')
+                self.get_logger().info(f'Client sent: robot_name={goal_msg.robot_name}, goal_location={goal_msg.goal_location}')        # 9번 출력 
                 self.isClientSent = True
                 break
 
         while(1):
             if self.cnt == 60 or current_pose[0] != -10.0:
-                self.get_logger().info(f'Current_pose: pos_x = {current_pose[0]}, pos_y = {current_pose[1]}')
+                self.get_logger().info(f'Current_pose: pos_x = {current_pose[0]}, pos_y = {current_pose[1]}')                           # 10번 출력 
                 break
             self.cnt += 1
             time.sleep(1)
 
         feedback_msg = RobotTask.Feedback()
         target_pose = pose_dict[goal_msg.goal_location]
-        while (self.isTaskComplete == False):
+        while (self.isTaskComplete == False):                  
             # remaining_distance에 대한 계산
             ## =======================================================
             feedback_msg.remaining_distance = self.calculate_distance(target_pose)
-            self.get_logger().info(f'Feedback: {feedback_msg.remaining_distance}')
+            self.get_logger().info(f'Feedback: {feedback_msg.remaining_distance}')                                                     # 11번 출력 
             self.get_logger().info('--------------111111111------------------')
             goal_handle.publish_feedback(feedback_msg)
         
             ## 목표 지점 근처에 도달했을 때 ADJUSTING 상태로 전환
             if feedback_msg.remaining_distance < 0.45:
-                self.get_logger().info(f'ADJUSTING MODE')
+                self.get_logger().info(f'ADJUSTING MODE')                                                                               # 12번 출력
                 ### ADJUSTING 상태 관련 코드 
                 #### ------------------------------------- 
                 #### ...
                 #### -------------------------------------
 
                 ### TaskComplete 업데이트
-                self.isTaskComplete = True
+                self.isTaskComplete = True                    
             ## 목표 지점 도달X MOVING 상태 유지
             else:
                 self.get_logger().info(f'MOVING MODE')
-                #goal_handle.publish_feedback(feedback_msg)
                 time.sleep(1)
+
             ## =======================================================
 
         # 조정 완료시 클라이언트에 액션 상태가 변했음을 알림
         goal_handle.succeed()
         result = RobotTask.Result()
-        result.result_msg = 'done'
+        result.task_complete = True
         return result
             
     def calculate_distance(self, target_pose):
         global current_pose
 
-        dx = current_pose[0] - 0.75 # target_pose[0] 
-        dy = current_pose[1] - 0.2  # target_pose[1] 
+        dx = current_pose[0] - 0.75 #target_pose[0] # 0.75 
+        dy = current_pose[1] - 0.2  #target_pose[1] # 0.2  
         
         return math.sqrt(dx * dx + dy * dy)
     
