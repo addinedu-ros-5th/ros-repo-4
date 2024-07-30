@@ -1,9 +1,9 @@
 # Request(== Goal) (robot_task_client -> robot_task_server)
 string robot_name
-string goal_location
+string goal_location                      # string[] rack_list     # new   #["R_A1", "R_A2", "R_A3"] or ["R_A1", "R_B2", "R_C3"], ...
 ---
 # Response(robot_task_server -> robot_task_client)
-string result_msg
+bool task_complete
 ---
 # Feedback(robot_task_server -> robot_task_client)
-float32 remaining_distance 
+float32 remaining_distance

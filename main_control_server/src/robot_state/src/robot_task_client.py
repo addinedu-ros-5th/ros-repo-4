@@ -91,5 +91,5 @@ class RobotTaskClient(Node):
     def publish_result(self, result_msg):
         result = String()
         result.data = result_msg
-        self.result_publisher.publish(result)
+        # self.result_publisher.publish(result)
         
