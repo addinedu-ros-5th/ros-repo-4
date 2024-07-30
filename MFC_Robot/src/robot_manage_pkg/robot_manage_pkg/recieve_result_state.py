@@ -4,15 +4,16 @@ from std_msgs.msg import String
 from geometry_msgs.msg import Twist
 import json
 
-class DetectionServer(Node):
-    def __init__(self):
-        super().__init__('detection_server')
+class RobotClient(Node):
+    def __init__(self, robot_id):
+        super().__init__('robot_client')
+        self.robot_id = robot_id
         self.cmd_vel_publisher = self.create_publisher(Twist, 'base_controller/cmd_vel_unstamped', 10)
         self.obstacle_publisher = self.create_publisher(String, 'obstacle_topic', 10)
 
         self.detection_subscription = self.create_subscription(
             String,
-            'detection_result',
+            f'detection_result/{self.robot_id}',
             self.listener_callback,
             10
         )
@@ -58,9 +59,10 @@ class DetectionServer(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    detection_server = DetectionServer()
-    rclpy.spin(detection_server)
-    detection_server.destroy_node()
+    robot_id = 'robot_1'  # 각 로봇의 고유 ID 설정
+    robot_client = RobotClient(robot_id)
+    rclpy.spin(robot_client)
+    robot_client.destroy_node()
     rclpy.shutdown()
 
 if __name__ == '__main__':
