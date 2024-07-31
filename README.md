@@ -20,7 +20,7 @@ Enter password: 슬랙에 있는 AWS RDS PW: xxxxxx
 ~/dev_ws/git_ws$ mysql -u root -p
 Enter password: 본인 로컬 MYSQL PW
 ```
-
+ 
 ```
 mysql > create database DFC_system_db;
 mysql > use DFC_system_db;
