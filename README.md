@@ -24,6 +24,6 @@ Enter password: 본인 로컬 MYSQL PW
 ```
 mysql > create database DFC_system_db;
 mysql > use DFC_system_db;
-mysql > SOURCE DFC_system_db.sql 위치한 절대 경로;
+mysql > SOURCE 'DFC_system_db.sql 위치한 절대 경로';
 mysql > show tables;
 ```
