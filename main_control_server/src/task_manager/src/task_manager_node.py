@@ -171,6 +171,7 @@ class OrderListService(Node):
         msg = StartInspection()
         msg.product_code = product["Product_Code"]
         msg.product_name = product["Product_Name"]
+        msg.receiving_quant = str(product["Receiving_Quant"])
         self.publisher_start_inspection.publish(msg)
         self.get_logger().info(f'Sending inspection start signal for {product["Product_Name"]}')
 

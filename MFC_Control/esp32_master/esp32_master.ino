@@ -11,6 +11,9 @@
 const char* ssid = "addinedu_class_1(2.4G)";
 const char* password = "addinedu1";
 
+// const char* ssid = "CLL5G";
+// const char* password = "cll16661140";
+
 #define SLAVE1_ADDR 0x08
 #define SLAVE2_ADDR 0x09
 
@@ -21,7 +24,8 @@ const long interval = 1000; // 1초 간격
 
 // String MFCNetworkManagerIP = "172.30.1.28"; // network_manager IP 주소 탐탐
 // String MFCNetworkManagerIP = "192.168.0.15"; // network_manager IP 주소 쬰지네
-String MFCNetworkManagerIP = "192.168.2.28"; // network_manager IP 주소 학원
+// String MFCNetworkManagerIP = "192.168.2.28"; // network_manager IP 주소 학원
+String MFCNetworkManagerIP = "172.30.1.57";
 const uint16_t networkManagerPort = 12345;
 
 void setup() {
@@ -62,12 +66,18 @@ void handleClientRequest() {
         String request = client.readStringUntil('\n');
         Serial.println("Received request: " + request);
         if (request.startsWith("START_INSPECTION:")) {
-          String productCode = request.substring(request.indexOf(':') + 1);
-          Serial.println("Received start inspection signal for product: " + productCode);
-          sendCommandToArduino(SLAVE1_ADDR, "LED_ON:" + productCode);
-          sendCommandToArduino(SLAVE2_ADDR, "LED_ON:" + productCode);
+          int firstSeparator = request.indexOf(':');
+          int secondSeparator = request.indexOf(':', firstSeparator + 1);
+          
+          if (firstSeparator != -1 && secondSeparator != -1) {
+            String productCode = request.substring(firstSeparator + 1, secondSeparator);
+            String quantity = request.substring(secondSeparator + 1);
+            Serial.println("Received start inspection signal for product: " + productCode + " with quantity: " + quantity);
+            sendCommandToArduino(SLAVE1_ADDR, "START_INSPECTION:" + productCode + ":" + quantity);
+            // sendCommandToArduino(SLAVE2_ADDR, "START_INSPECTION:" + productCode + ":" + quantity);
 
-          client.println("Inspection started for product: " + productCode);
+            client.println("Inspection started for product: " + productCode + " with quantity: " + quantity);
+          }
         }
         // 다른 요청을 처리하기 위한 조건문을 추가하세요.
       }

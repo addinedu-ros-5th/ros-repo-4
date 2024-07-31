@@ -27,7 +27,7 @@ class MFCNetworkManager(Node):
         #192.168.1.44 건대 카공
         #172.30.1.87 건대 카공
 
-        self.esp32_master = ESP32Master('172.20.10.5', 80) # 시리얼 통신 클래스 인스턴스 생성
+        self.esp32_master = ESP32Master('172.30.1.87', 80) # 시리얼 통신 클래스 인스턴스 생성
         self.receive_inspection_server_thread = threading.Thread(target=self.receive_inspection_server)
         self.receive_inspection_server_thread.start()
 
@@ -41,19 +41,20 @@ class MFCNetworkManager(Node):
 
 
     def start_inspection_callback(self, msg):
-        self.get_logger().info(f'Received start inspection signal for {msg.product_code}:{msg.product_name}')
-        self.esp32_master.send_signal(f'START_INSPECTION:{msg.product_code}')
+        self.get_logger().info(f'Received start inspection signal for {msg.product_code}:{msg.product_name}:{msg.receiving_quant}')
+        self.esp32_master.send_signal(f'START_INSPECTION:{msg.product_code}:{msg.receiving_quant}')
 
     def receive_inspection_server(self):
-        self.check_and_close_existing_socket('172.20.10.4', 12345)
+        self.check_and_close_existing_socket('172.30.1.57', 12345)
         #192.168.0.15 쬰지네
         #172.30.1.28 탐탐
         #192.168.2.28 학원1
             #192.168.0.89 학원2
         #192.168.1.40 건대카공
-        #커피랑도서관
+        #172.30.1.57 커피랑도서관
+        #172.20.10.4 희공쥬
         receive_inspection_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        receive_inspection_server_socket.bind(('172.20.10.4', 12345))  # 서버 IP와 포트 설정 ifconfig러 확인하기
+        receive_inspection_server_socket.bind(('172.30.1.57', 12345))  # 서버 IP와 포트 설정 ifconfig러 확인하기
         receive_inspection_server_socket.listen(5)
         self.get_logger().info('Server listening on port 12345')
 
