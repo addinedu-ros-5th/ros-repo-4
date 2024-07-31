@@ -6,6 +6,7 @@
 #define SLAVE_ADDRESS 0x08  // 슬레이브 보드 주소 (I2C 통신)
 
 Servo servo1; //상품코드 
+Servo servo2; //상품코드 
 
 String productCode = ""; // 완료된 품번 정보를 저장할 변수
 int expectedQuantity = 0; // 예상 수량을 저장할 변수
@@ -43,9 +44,10 @@ void setup() {
 
   // 서보 모터 핀 설정
   servo1.attach(13); // 서보 모터 1 핀
-
+  servo2.attach(12); // 서보 모터 1 핀
   // 서보 모터 초기 위치 설정
   servo1.write(180);
+  servo2.write(180);
 
   pinMode(A4, INPUT_PULLUP); // SDA에 내장 풀업 저항 활성화
   pinMode(A5, INPUT_PULLUP); // SCL에 내장 풀업 저항 활성화
@@ -73,36 +75,44 @@ void handleKeypadInput(char key) {
       Serial.println(enteredQuantityStr);
       Serial.println("Enter the next digit or press # to confirm the quantity.");
     }
-  } else if (key == '#') { // 입력 완료 확인
+  } 
+  else if (key == '#') { // 입력 완료 확인
     if (enteringCode) {
       Serial.print("Entered code to compare: ");
       Serial.println(enteredCode);
-      enteringCode = false; // 수량 입력 상태로 전환
-      Serial.println("Enter the quantity now, followed by # to confirm.");
-    } else {
+      if (enteredCode == productCode.substring(1, 3)) { // 제품 코드의 두 자리 숫자와 비교
+        servo1.write(0); // 일치하면 서보 모터를 0도로 이동
+        Serial.println("Code matched, servo1 moved to 0 degrees for product: " + productCode);
+        enteringCode = false; // 수량 입력 상태로 전환
+        Serial.println("Enter the quantity now, followed by # to confirm.");
+      } 
+      else {
+        Serial.println("Code did not match. Please try again.");
+        enteredCode = ""; // 입력 코드 초기화
+      }
+    }
+    else {
       enteredQuantity = enteredQuantityStr.toInt();
       Serial.print("Entered quantity to compare: ");
       Serial.println(enteredQuantity);
 
-      if (enteredCode == productCode.substring(1, 3) && enteredQuantity == expectedQuantity) { // 제품 코드의 두 자리 숫자와 비교 및 수량 비교
-        servo1.write(0); // 일치하면 서보 모터를 0도로 이동
-        Serial.println("Code and quantity matched, servo moved to 0 degrees for product: " + productCode);
+      if (enteredQuantity == expectedQuantity) { // 수량 비교
+        servo2.write(0); // 일치하면 서보 모터 2를 0도로 이동
+        Serial.println("Quantity matched, servo2 moved to 0 degrees.");
 
         inspectionComplete = true; // 검수 완료로 설정
-
         waitingForKeypadInput = false; // 키패드 입력 대기 상태 종료
         enteredCode = ""; // 입력 코드 초기화
         enteredQuantityStr = ""; // 입력 수량 초기화
         enteringCode = true; // 코드 입력 상태로 전환
-      } else {
-        Serial.println("Code or quantity did not match. Please try again.");
+      }
+      else {
+        Serial.println("Code did not match. Please try again.");
         enteredCode = ""; // 입력 코드 초기화
-        enteredQuantityStr = ""; // 입력 수량 초기화
-        enteringCode = true; // 코드 입력 상태로 전환
-        Serial.println("Enter the product code again, followed by # to confirm.");
       }
     }
-  } else if (key == '*') { // 입력 초기화
+  } 
+  else if (key == '*') { // 입력 초기화
     if (enteringCode) {
       enteredCode = "";
       Serial.println("Input code cleared. Enter the code again.");
@@ -134,6 +144,7 @@ void receiveEvent(int howMany) {
 
       // 서보 모터를 180도로 회전
       servo1.write(180);
+      servo2.write(180);
       waitingForKeypadInput = true; // 키패드 입력 대기 상태 설정
 
       Serial.println("Start inspection for product: " + productCode + " with expected quantity: " + expectedQuantity);
