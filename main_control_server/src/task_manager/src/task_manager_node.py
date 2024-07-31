@@ -10,6 +10,8 @@ from task_manager.srv import GenerateOrder, AllocatorTask
 from modules.order_grouping import group_items
 from modules.order_list import OrderList  
 from robot_state.srv import UpdateDB
+from robot_state.msg import TaskProgressUpdate
+
 
 import mysql.connector as con
 
@@ -48,7 +50,15 @@ class OrderListService(Node):
             'inspection_complete',
             self.inspection_complete_callback,
             10)
+        # 'TaskProgressUpdate' 메세지 타입의 subscriber
+        self.subscription_task_progress_update = self.create_subscription(                  # new
+            TaskProgressUpdate,
+            'send_task_complete_results',
+            self.task_progress_callback,
+            10
+            )
         
+
         # 'GuiUpdate' 메세지 타입의 publisher
         self.publisher_update_gui = self.create_publisher(GuiUpdate, 'gui_update', 10)        
 
@@ -80,6 +90,12 @@ class OrderListService(Node):
         request.robot_name = "Robo1"                      # 디버깅용
         future = self.client.call_async(request)       
         future.add_done_callback(self.callback_response)  # 응답 콜백 설정
+
+    def task_progress_callback(self, msg):                                                  # new
+        self.get_logger().info(f'Received task progress from robot_state_manager: {msg.robot_name}')                       
+        self.get_logger().info(f'Current Rack: {msg.current_rack}')                                                   
+        self.get_logger().info(f'Task Complete: {msg.task_complete}')
+        self.get_logger().info(f'****************************************************')
 
     def callback_response(self, future):
         try:
@@ -155,6 +171,7 @@ class OrderListService(Node):
         msg = StartInspection()
         msg.product_code = product["Product_Code"]
         msg.product_name = product["Product_Name"]
+        msg.receiving_quant = str(product["Receiving_Quant"])
         self.publisher_start_inspection.publish(msg)
         self.get_logger().info(f'Sending inspection start signal for {product["Product_Name"]}')
 

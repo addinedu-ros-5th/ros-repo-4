@@ -2,13 +2,13 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Twist
-from std_msgs.msg import String
+from std_msgs.msg import String  # Import String message type
 from cv_bridge import CvBridge
 import cv2 as cv
 import numpy as np
 import os
 from ament_index_python.packages import get_package_share_directory
-import time
+import time  # Import time module
 
 class ArucoCmdVelPublisher(Node):
     def __init__(self):

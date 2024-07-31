@@ -2,7 +2,7 @@ import math
 import numpy as np
 import os
 import yaml
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 class AStarPlanner:
 
