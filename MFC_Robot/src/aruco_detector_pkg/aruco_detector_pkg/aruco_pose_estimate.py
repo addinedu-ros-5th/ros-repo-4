@@ -2,21 +2,13 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Twist
-<<<<<<< HEAD
-from std_msgs.msg import String  # String 메시지 타입을 임포트
-=======
-from std_msgs.msg import String  # Import String message type
->>>>>>> bdfdfb4 (move: yd_lidar_driver folde && Modified aruco code)
+from std_msgs.msg import String
 from cv_bridge import CvBridge
 import cv2 as cv
 import numpy as np
 import os
 from ament_index_python.packages import get_package_share_directory
-<<<<<<< HEAD
-import time  # 시간 모듈 임포트
-=======
-import time  # Import time module
->>>>>>> bdfdfb4 (move: yd_lidar_driver folde && Modified aruco code)
+import time
 
 class ArucoCmdVelPublisher(Node):
     def __init__(self):
@@ -24,23 +16,23 @@ class ArucoCmdVelPublisher(Node):
         self.get_logger().info('ArucoCmdVelPublisher 노드가 시작되었습니다.')
 
         self.bridge = CvBridge()
-        self.marker_size = 3.1  # 센티미터 단위
+        self.marker_size = 3.0  # 센티미터 단위
         self.angle_aligned = False  # 각도 조정 완료 여부
         self.result_state = "STOPPED"  # 초기 상태
         self.last_stationary_time = None  # 마지막으로 정지한 시간 초기화
 
         try:
             package_share_directory = get_package_share_directory('aruco_detector_pkg')
-            calib_data_path = os.path.join(package_share_directory, 'calib_data', 'MultiMatrix_ys.npz')
+            calib_data_path = os.path.join(package_share_directory, 'calib_data', 'MultiMatrix.npz')
 
             # 캘리브레이션 데이터 로드
             calib_data = np.load(calib_data_path)
             self.cam_mat = calib_data["camMatrix"]
             self.dist_coef = calib_data["distCoef"]
 
-            # 아루코 마커 사전 및 감지 파라미터 설정
             self.dictionary = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_50)
             self.parameters = cv.aruco.DetectorParameters()
+            self.detector = cv.aruco.ArucoDetector(self.dictionary, self.parameters)
 
             # 이미지를 subscribe
             self.image_subscription = self.create_subscription(
@@ -56,11 +48,7 @@ class ArucoCmdVelPublisher(Node):
             # result_topic을 subscribe
             self.result_subscription = self.create_subscription(
                 String,
-<<<<<<< HEAD
-                'result_topic',
-=======
                 'result_topic_robot_1',
->>>>>>> bdfdfb4 (move: yd_lidar_driver folde && Modified aruco code)
                 self.result_callback,
                 10
             )
@@ -68,43 +56,29 @@ class ArucoCmdVelPublisher(Node):
             # 조정완료 토픽 퍼블리셔
             self.adjustment_complete_publisher = self.create_publisher(String, 'arrive_topic', 10)
 
-<<<<<<< HEAD
-            self.get_logger().info('초기화 완료.')
-=======
             self.get_logger().info('Initialization complete.')
->>>>>>> bdfdfb4 (move: yd_lidar_driver folde && Modified aruco code)
 
         except Exception as e:
             self.get_logger().error(f'초기화 중 오류: {e}')
 
-    def result_callback(self, msg):
-        self.result_state = msg.data
-        self.get_logger().info(f'결과 상태가 업데이트됨: {self.result_state}')
 
     def result_callback(self, msg):
         self.result_state = msg.data
         self.get_logger().info(f'Result state updated to: {self.result_state}')
 
     def image_callback(self, msg):
-<<<<<<< HEAD
-        if self.result_state != "ADJUSTING":
-            self.get_logger().info('현재 아루코 마커 감지가 허용되지 않습니다.')
-            return
-
-=======
 
         if self.result_state != "ADJUSTING":
             self.get_logger().info('Aruco marker detection is currently not allowed.')
             return
         
->>>>>>> bdfdfb4 (move: yd_lidar_driver folde && Modified aruco code)
         try:
             # 이미지 메시지를 OpenCV 이미지로 변환
             frame = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
             gray_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
 
             # 아루코 마커 검출 및 코너 좌표 추출
-            marker_corners, marker_IDs, _ = cv.aruco.detectMarkers(gray_frame, self.dictionary, parameters=self.parameters)
+            marker_corners, marker_IDs, _ = self.detector.detectMarkers(gray_frame)
 
             if marker_corners:
                 for marker_corner, marker_id in zip(marker_corners, marker_IDs):
@@ -157,17 +131,6 @@ class ArucoCmdVelPublisher(Node):
                         self.get_logger().error('포즈 추정 실패.')
 
             else:
-<<<<<<< HEAD
-                self.get_logger().info('마커가 검출되지 않음.')
-
-        except Exception as e:
-            self.get_logger().error(f'이미지 처리 오류: {e}')
-
-        # 로봇이 3초 동안 정지 상태인지 확인
-        if self.last_stationary_time and (time.time() - self.last_stationary_time) >= 2:
-            self.publish_adjustment_complete()
-            self.result_state = "STOPPED"
-=======
                 self.get_logger().info('No markers detected.')
 
         except Exception as e:
@@ -178,7 +141,6 @@ class ArucoCmdVelPublisher(Node):
             self.publish_adjustment_complete()
             self.result_state = "STOPPED"
 
->>>>>>> bdfdfb4 (move: yd_lidar_driver folde && Modified aruco code)
 
     def get_marker_corners_3d(self):
         return np.array([
