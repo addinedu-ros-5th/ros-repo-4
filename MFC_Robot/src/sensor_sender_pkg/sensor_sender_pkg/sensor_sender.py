@@ -37,7 +37,11 @@ class SensorSender(Node):
         self.lidar_buffer = []
         
         # PC 서버 설정 (PC의 IP 주소를 사용)
+<<<<<<< HEAD
         self.pc_ip = '192.168.2.31'  # 예: PC의 IP 주소
+=======
+        self.pc_ip = '172.30.1.49'  # 예: PC의 IP 주소
+>>>>>>> 851f0c2eb11d3f8adf70baf44094c1665f71ae88
         self.pc_port = 8080
         self.connect_to_server()
     
@@ -108,7 +112,7 @@ class SensorSender(Node):
         print(f"Sending total data of length: {total_length}")
 
         try:
-            # 데이터 길이 전송
+            # 데이터 길이 전송buffer
             self.client_socket.sendall(total_length.to_bytes(4, 'big'))
 
             # 이미지 데이터 길이 전송

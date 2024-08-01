@@ -24,4 +24,5 @@ v4l2_camera_node:
     zoom: 100
     focus_auto: true
     focus_absolute: 0
+    fps: 15
 

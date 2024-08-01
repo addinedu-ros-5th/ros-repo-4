@@ -24,8 +24,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'robot_controller = lrobot.robot_controller:main',
-            'robot_control = lrobot.robot_control:main',
+            'path_server = lrobot.path_server:main',
+            'robot_drive = lrobot.robot_drive:main',
+            'a_star = lrobot.astar:main',
         ],
     },
 )

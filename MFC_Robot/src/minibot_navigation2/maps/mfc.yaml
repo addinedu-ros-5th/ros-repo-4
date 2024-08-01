@@ -1,4 +1,4 @@
-image: mfc.pgm
+image: /home/ys/5-ros-repo-4/lrobot/src/lrobot/maps/mfc.pgm
 mode: trinary
 resolution: 0.05
 origin: [-0.461, -1.85, 0]

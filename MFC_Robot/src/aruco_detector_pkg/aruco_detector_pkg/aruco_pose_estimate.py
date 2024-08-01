@@ -2,11 +2,13 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Twist
+from std_msgs.msg import String  # Import String message type
 from cv_bridge import CvBridge
 import cv2 as cv
 import numpy as np
 import os
 from ament_index_python.packages import get_package_share_directory
+import time  # Import time module
 
 class ArucoCmdVelPublisher(Node):
     def __init__(self):
@@ -14,7 +16,7 @@ class ArucoCmdVelPublisher(Node):
         self.get_logger().info('ArucoCmdVelPublisher node has been started.')
 
         self.bridge = CvBridge()
-        self.marker_size = 7.5  # 센티미터 단위
+        self.marker_size = 3.0  # 센티미터 단위
         self.angle_aligned = False  # 각도 조정 완료 여부
 
         try:
@@ -26,7 +28,6 @@ class ArucoCmdVelPublisher(Node):
             self.cam_mat = calib_data["camMatrix"]
             self.dist_coef = calib_data["distCoef"]
 
-            # 아루코 마커 사전 및 감지 파라미터 설정
             self.dictionary = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_50)
             self.parameters = cv.aruco.DetectorParameters()
             self.detector = cv.aruco.ArucoDetector(self.dictionary, self.parameters)
@@ -42,12 +43,33 @@ class ArucoCmdVelPublisher(Node):
             # cmd_vel 퍼블리셔
             self.cmd_vel_publisher = self.create_publisher(Twist, 'cmd_vel', 10)
 
+            # result_topic을 subscribe
+            self.result_subscription = self.create_subscription(
+                String,
+                'result_topic_robot_1',
+                self.result_callback,
+                10
+            )
+
+            # 조정완료 토픽 퍼블리셔
+            self.adjustment_complete_publisher = self.create_publisher(String, 'arrive_topic', 10)
+
             self.get_logger().info('Initialization complete.')
-        
+
         except Exception as e:
-            self.get_logger().error(f'Error during initialization: {e}')
+            self.get_logger().error(f'초기화 중 오류: {e}')
+
+
+    def result_callback(self, msg):
+        self.result_state = msg.data
+        self.get_logger().info(f'Result state updated to: {self.result_state}')
 
     def image_callback(self, msg):
+
+        if self.result_state != "ADJUSTING":
+            self.get_logger().info('Aruco marker detection is currently not allowed.')
+            return
+        
         try:
             # 이미지 메시지를 OpenCV 이미지로 변환
             frame = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
@@ -112,6 +134,12 @@ class ArucoCmdVelPublisher(Node):
         
         except Exception as e:
             self.get_logger().error(f'Error in process_image: {e}')
+
+        # Check if the robot has been stationary for 3 seconds
+        if self.last_stationary_time and (time.time() - self.last_stationary_time) >= 2:
+            self.publish_adjustment_complete()
+            self.result_state = "STOPPED"
+
 
     def get_marker_corners_3d(self):
         return np.array([
