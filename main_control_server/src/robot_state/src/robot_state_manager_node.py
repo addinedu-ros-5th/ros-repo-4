@@ -1,29 +1,42 @@
 #!/usr/bin/env python3
 import sys
 import os
+import yaml
 import threading
 import queue
 import time
-
+import mysql.connector as con
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 
-from modules.connect import *
+from modules.connect import Connect
 from robot_task_client import RobotTaskClient
 
 # 서비스 서버
 from robot_state.srv import UpdateDB
 # Task Manager로부터 오는 메세지 타입
 from task_manager.msg import SendAllocationResults
+# Robot Task Client으로부터 오는 메세지 타입
+from std_msgs.msg import String
+
+# YAML 파일 경로
+yaml_file_path = '/home/edu/dev_ws/git_ws2/ros-repo-4/main_control_server/params/db_user_info.yaml'
+
+# YAML 파일을 읽어 파라미터를 가져옴
+def load_db_params(file_path):
+    with open(file_path, 'r') as file:
+        params = yaml.safe_load(file)
+    return params['local_db']['id'], params['local_db']['pw']
 
 def get_mysql_connection():
     try:
-        db_instance = Connect("team4", "0444")
+        db_id, db_pw = load_db_params(yaml_file_path)
+        db_instance = Connect(db_id, db_pw)
         return db_instance
     except con.Error as err:
         print(f"Error: {err}")
-        return None
+        return None    
     
 class UpdateRobotState():
     def __init__(self, db_instance):
@@ -59,6 +72,13 @@ class MFCRobotManager(Node):
             'send_allocation_results',
             self.task_assignment_callback,
             10)
+        
+        # # 'String' 메세지 타입 subscriber 
+        # self.task_completes_results_sub = self.create_subscription(
+        #     String,
+        #     'result_topic',
+        #     self.task_complete_callback,
+        #     10)
         
     def update_db_callback(self, request, response):
         # 디버깅용
@@ -132,7 +152,7 @@ def main(args=None):
                 print(Robot_Name, Task_Code, Rack_List, Task_Assignment)                   # 5번 출력
                 print('################################################################')  
 
-                node2.receive_goal_list(Robot_Name, Rack_List)                              # 6번 출력
+                node2.receive_goal_list(Robot_Name, Rack_List, Task_Assignment)            # 6번 출력
                 isTaskAssigned = False              # Send goal only once
     finally:
         executor.shutdown()
