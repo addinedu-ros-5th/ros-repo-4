@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1475</width>
-    <height>899</height>
+    <width>1273</width>
+    <height>671</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -862,10 +862,10 @@
   <widget class="QFrame" name="frame">
    <property name="geometry">
     <rect>
-     <x>710</x>
-     <y>350</y>
-     <width>485</width>
-     <height>716</height>
+     <x>740</x>
+     <y>340</y>
+     <width>456</width>
+     <height>228</height>
     </rect>
    </property>
    <property name="frameShape">
@@ -879,8 +879,8 @@
      <rect>
       <x>0</x>
       <y>0</y>
-      <width>485</width>
-      <height>716</height>
+      <width>456</width>
+      <height>228</height>
      </rect>
     </property>
     <property name="text">
@@ -996,6 +996,76 @@
      <string>Robot2</string>
     </property>
    </widget>
+  </widget>
+  <widget class="QTableWidget" name="tableWidget">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>350</y>
+     <width>701</width>
+     <height>211</height>
+    </rect>
+   </property>
+   <column>
+    <property name="text">
+     <string>Robot_Name</string>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>8</pointsize>
+     </font>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>Current_Location</string>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>8</pointsize>
+     </font>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>Status</string>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>8</pointsize>
+     </font>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>Battery_Status</string>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>8</pointsize>
+     </font>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>Task_Assignment</string>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>8</pointsize>
+     </font>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>Error_Codes</string>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>8</pointsize>
+     </font>
+    </property>
+   </column>
   </widget>
  </widget>
  <resources>

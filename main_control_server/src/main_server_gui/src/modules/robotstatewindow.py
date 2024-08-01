@@ -17,15 +17,15 @@ from modules.connect import *
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PoseWithCovarianceStamped
 
+
 # 현재 파일의 디렉토리 경로를 기준으로 network_manager/lib/network_manager 경로를 추가
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../network_manager/lib/network_manager')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../network_manager/lib/network_manager')))
 from communication_robot_node import AmclSubscriber 
 
-# 현재 파일의 디렉토리 경로를 기준으로 network_manager/lib/network_manager 경로를 추가
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../robot_state/lib/robot_state')))
-from robot_state_manager_node import UpdateRobotState 
+# YAML 파일 경로
+yaml_file_path = '/home/edu/dev_ws/git_ws2/ros-repo-4/main_control_server/params/db_user_info.yaml'
 
-# 지도 load
+# 지도 파일 경로
 map_yaml_file = os.path.join(get_package_share_directory('main_server_gui'), 'map', 'mfc.yaml')
 #map_yaml_file = os.path.join(get_package_share_directory('main_server_gui'), 'map', 'map_hg.yaml')
 
@@ -34,14 +34,30 @@ init_pos_x = 0
 init_pos_y = 0
 robot_position = [init_pos_x,init_pos_y]  # 로봇의 초기 위치(position_x, position_y)
 
+# YAML 파일을 읽어 파라미터를 가져옴
+def load_db_params(file_path):
+    with open(file_path, 'r') as file:
+        params = yaml.safe_load(file)
+    return params['local_db']['id'], params['local_db']['pw']
 
 def get_mysql_connection():
     try:
-        db_instance = Connect("team4", "0444")
+        db_id, db_pw = load_db_params(yaml_file_path)
+        db_instance = Connect(db_id, db_pw)
         return db_instance
     except con.Error as err:
         print(f"Error: {err}")
         return None
+    
+class UpdateRobotState():
+    def __init__(self, db_instance):
+        self.cursor = db_instance.cursor
+
+    # 데이터베이스에서 테이블 정보를 가져오는 함수 정의
+    def loadDataFromDB(self, query):
+        self.cursor.execute(query)
+        robot_data = self.cursor.fetchall()
+        return robot_data
     
 class RobotStateWindow(QtWidgets.QDialog):
     def __init__(self, main_window):
@@ -64,23 +80,63 @@ class RobotStateWindow(QtWidgets.QDialog):
         
         self.Setup()
         self.start_spin_thread()
+
         self.Main()
     
     def Main(self):
-        query2 = """
+        # [테스트 레벨] 'Robot_manager' 테이블 데이터 업로드
+        self.ShowRobotTable()
+        # [테스트 레벨] 로봇 상태 버튼 창
+        self.ShowRobotBtn()
+
+        self.db_instance.disConnection()
+
+    def ShowRobotTable(self):
+        # [테스트 레벨] 'Robot_manager' 테이블 데이터 업로드
+        addlist = []
+        query = "SELECT Robot_Name, Rack_List, Status, Estimated_Completion_Time, Battery_Status, Task_Assignment, Error_Codes FROM Robot_manager;"
+        robot_data = self.update_robot_state.loadDataFromDB(query)
+        for row in robot_data:
+                addlist.append(row)
+        
+        print(addlist)
+        print('------------------------------------')
+
+        for robotInfo in addlist:
+            Robot_Name = robotInfo[0]
+            Rack_List = robotInfo[1]
+            Status = robotInfo[2] 
+            Estimated_Completion_Time = robotInfo[3] 
+            Battery_Status = robotInfo[4]
+            Task_Assignment = robotInfo[5]
+            Error_Codes = robotInfo[6]
+
+            # 로그인에서 입력 받은 데이터 home.ui TableWidget에 보이기
+            row = self.tableWidget.rowCount()
+            self.tableWidget.insertRow(row)
+            self.tableWidget.setItem(row, 0, QTableWidgetItem(Robot_Name))
+            self.tableWidget.setItem(row, 1, QTableWidgetItem(Rack_List))
+            self.tableWidget.setItem(row, 2, QTableWidgetItem(Status))
+            self.tableWidget.setItem(row, 3, QTableWidgetItem(str(Estimated_Completion_Time)))
+            self.tableWidget.setItem(row, 4, QTableWidgetItem(Battery_Status))
+            self.tableWidget.setItem(row, 5, QTableWidgetItem(Task_Assignment))
+            self.tableWidget.setItem(row, 6, QTableWidgetItem(Error_Codes))
+
+
+    def ShowRobotBtn(self):
+        # [테스트 레벨] 로봇 상태 버튼 창
+        query = """
             (SELECT * FROM Robot_manager WHERE Robot_Name = 'Robo1' ORDER BY Time DESC LIMIT 1)
             UNION
             (SELECT * FROM Robot_manager WHERE Robot_Name = 'Robo2' ORDER BY Time DESC LIMIT 1);
         """
-        self.robot_data = self.update_robot_state.loadDataFromDB(query2)
-        self.robot_status_1 = self.robot_data[0][3]
-        self.error_codes_1 = self.robot_data[0][6]
-        self.robot_status_2 = self.robot_data[1][3]
-        self.error_codes_2 = self.robot_data[1][6]
+        robot_data = self.update_robot_state.loadDataFromDB(query)
+        self.robot_status_1 = robot_data[0][3]
+        self.error_codes_1 = robot_data[0][6]
+        self.robot_status_2 = robot_data[1][3]
+        self.error_codes_2 = robot_data[1][6]
 
         self.CheckStatusAndBlink()
-
-        self.db_instance.disConnection()
 
     def CheckStatusAndBlink(self):
         self.setFrameColor(self.robot_status_1, self.error_codes_1, self.frame_robot1)

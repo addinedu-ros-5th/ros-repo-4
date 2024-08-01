@@ -2,12 +2,31 @@ from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QTimer, QTime, pyqtSignal
 from ament_index_python.packages import get_package_share_directory
 import os
+import yaml
 import mysql.connector as con
 
-from modules.connect import *
+from modules.connect import Connect
 from modules.robotstatewindow import *
 from modules.signinwindow import *
 
+# YAML 파일 경로
+yaml_file_path = '/home/edu/dev_ws/git_ws2/ros-repo-4/main_control_server/params/db_user_info.yaml'
+
+# YAML 파일을 읽어 파라미터를 가져옴
+def load_db_params(file_path):
+    with open(file_path, 'r') as file:
+        params = yaml.safe_load(file)
+    return params['local_db']['id'], params['local_db']['pw']
+
+def get_mysql_connection():
+    try:
+        db_id, db_pw = load_db_params(yaml_file_path)
+        db_instance = Connect(db_id, db_pw)
+        return db_instance
+    except con.Error as err:
+        print(f"Error: {err}")
+        return None    
+        
 class MainWindow(QtWidgets.QMainWindow):
     # Signal 정의 로스노드로부터 데이터를 받아야해요~
     inbound_list_signal = pyqtSignal(list)
@@ -48,15 +67,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # Signal 연결
         self.inbound_list_signal.connect(self.display_inbound_list)
         self.inbound_status_db_update_signal.connect(self.show_inbound_management)
-
-    
-    def get_mysql_connection(self):
-        try:
-            db_instance = Connect("team4", "0444")
-            return db_instance
-        except con.Error as err:
-            print(f"Error: {err}")
-            return None
        
     def toggleClock(self):
         if self.startButton.text() == 'Start':
@@ -91,7 +101,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.show_inbound_management()
 
     def update_inbound_list(self, inbound_list):#초기 리스트 update
-        db_instance = self.get_mysql_connection()
+        db_instance = get_mysql_connection()
         if db_instance:
             try:
                 db_instance.cursor.execute("SET FOREIGN_KEY_CHECKS=0")
@@ -196,7 +206,7 @@ class MainWindow(QtWidgets.QMainWindow):
         return None
 
     def fetch_inbound_table_data(self):
-        db_instance = self.get_mysql_connection()
+        db_instance = get_mysql_connection()
         if db_instance:
             try:
                 db_instance.cursor.execute("SELECT * FROM Inbound_Manager")
@@ -224,7 +234,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.tableWidget.setItem(row_idx, col_idx, QtWidgets.QTableWidgetItem(str(col_data)))
 
     def fetch_column_names(self, table_name):
-        db_instance = self.get_mysql_connection()
+        db_instance = get_mysql_connection()
         if db_instance:
             try:
                 db_instance.cursor.execute(f"SHOW COLUMNS FROM {table_name}")
