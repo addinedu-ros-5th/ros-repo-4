@@ -8,8 +8,8 @@
 // const char* ssid = "902";
 // const char* password = "22177070";
 
-const char* ssid = "addinedu_class_1(2.4G)";
-const char* password = "addinedu1";
+const char* ssid = "Tmwlakfk_>u<";
+const char* password = "96989898";
 
 // const char* ssid = "CLL5G";
 // const char* password = "cll16661140";
@@ -24,7 +24,7 @@ const long interval = 1000; // 1초 간격
 
 // String MFCNetworkManagerIP = "172.30.1.28"; // network_manager IP 주소 탐탐
 // String MFCNetworkManagerIP = "192.168.0.15"; // network_manager IP 주소 쬰지네
-String MFCNetworkManagerIP = "192.168.2.28"; // network_manager IP 주소 학원
+String MFCNetworkManagerIP = "192.168.1.102"; // network_manager IP 주소 팀 공유기
 const uint16_t networkManagerPort = 12345;
 
 void setup() {
