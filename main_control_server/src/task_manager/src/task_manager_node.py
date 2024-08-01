@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-
+import yaml
 import rclpy
 from rclpy.node import Node
-
 
 from task_manager.msg import DbUpdate, GuiUpdate
 from task_manager.msg import StartInspection, InspectionComplete, SendAllocationResults
@@ -11,7 +10,6 @@ from modules.order_grouping import group_items
 from modules.order_list import OrderList  
 from robot_state.srv import UpdateDB
 from robot_state.msg import TaskProgressUpdate
-
 
 import mysql.connector as con
 
@@ -50,6 +48,7 @@ class OrderListService(Node):
             'inspection_complete',
             self.inspection_complete_callback,
             10)
+        
         # 'TaskProgressUpdate' 메세지 타입의 subscriber
         self.subscription_task_progress_update = self.create_subscription(                  # new
             TaskProgressUpdate,
@@ -57,7 +56,7 @@ class OrderListService(Node):
             self.task_progress_callback,
             10
             )
-        
+        self.subscription_task_progress_update                                              # new
 
         # 'GuiUpdate' 메세지 타입의 publisher
         self.publisher_update_gui = self.create_publisher(GuiUpdate, 'gui_update', 10)        
@@ -96,6 +95,7 @@ class OrderListService(Node):
         self.get_logger().info(f'Current Rack: {msg.current_rack}')                                                   
         self.get_logger().info(f'Task Complete: {msg.task_complete}')
         self.get_logger().info(f'****************************************************')
+        ########################## 여기서 estimated_completion_time 업데이트? ##########################
 
     def callback_response(self, future):
         try:
@@ -157,8 +157,6 @@ class OrderListService(Node):
    
         return response
 
-
-
     def db_update_callback(self, msg):
         self.get_logger().info(f'Received DB update status: {msg.status}')
         if msg.status == "DB Update Completed" and not self.inspection_started:
@@ -177,7 +175,7 @@ class OrderListService(Node):
 
     
     def get_items_to_inspect(self):
-        db_connection = Connect("team4", "0444")
+        db_connection = get_mysql_connection()      #Connect("root", "0")
         cursor = db_connection.cursor
         cursor.execute("SELECT COUNT(*) FROM Inbound_Manager WHERE Status = '입하완료'")
         self.total_items_to_inspect = cursor.fetchone()[0]
@@ -200,7 +198,7 @@ class OrderListService(Node):
             self.get_logger().info('No more items to inspect.')
 
     def get_item_from_db(self, item_id):
-        db_connection = Connect("team4", "0444")
+        db_connection = get_mysql_connection() #Connect("root", "0")
         cursor = db_connection.cursor
         cursor.execute("SELECT * FROM Inbound_Manager WHERE Product_Code = %s", (item_id,))
         row = cursor.fetchone()
@@ -231,7 +229,7 @@ class OrderListService(Node):
 
         # 다음 인덱스가 현재 작업 코드와 다를 경우
         if (self.inspection_index < len(self.grouped_items) and self.grouped_items[self.inspection_index][0] != self.current_task_code):
-            self.send_task_allocation_request(self.current_task_code, self.product_code_list,"입고")
+            self.send_task_allocation_request(self.current_task_code, self.product_code_list,"입고")  # "Task_2", ['P01', 'P05', 'P09'], "입고"
             self.product_code_list = [] #list초기화
 
         # 모든 검수가 완료되었을 경우
@@ -245,7 +243,7 @@ class OrderListService(Node):
 
         
     def update_status_in_db(self, product_code, status):        
-        db_connection = Connect("team4", "0444")
+        db_connection = get_mysql_connection()    #Connect("root", "0")
         if not db_connection.conn or not db_connection.cursor:
             self.get_logger().error("Failed to connect to the database")
             return
@@ -302,11 +300,10 @@ class OrderListService(Node):
         
         self.get_logger().info(f'Published task assignment for robot: {robot_name}')
 
-
 class Connect():
     def __init__(self, User, Password):
         self.conn = con.connect(
-            host='database-1.cdigc6umyoh0.ap-northeast-2.rds.amazonaws.com',
+            host='localhost',
             user=User,
             password=Password,
             database='DFC_system_db'
@@ -320,6 +317,24 @@ class Connect():
             self.cursor.close()
             self.conn = None
 
+# YAML 파일 경로
+yaml_file_path = '/home/edu/dev_ws/git_ws2/ros-repo-4/main_control_server/params/db_user_info.yaml'
+
+# YAML 파일을 읽어 파라미터를 가져옴
+def load_db_params(file_path):
+    with open(file_path, 'r') as file:
+        params = yaml.safe_load(file)
+    return params['local_db']['id'], params['local_db']['pw']
+
+def get_mysql_connection():
+    try:
+        db_id, db_pw = load_db_params(yaml_file_path)
+        db_instance = Connect(db_id, db_pw)
+        return db_instance
+    except con.Error as err:
+        print(f"Error: {err}")
+        return None    
+    
 def main(args=None):
     rclpy.init(args=args)
     order_list_service = OrderListService()
