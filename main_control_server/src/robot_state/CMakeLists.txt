@@ -36,7 +36,7 @@ install(
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/UpdateDB.srv"
   "action/RobotTask.action"                          # new
-  "msg/RobotState.msg"                               # new
+  "msg/TaskProgressUpdate.msg"                       # new
 )
 
 # Install Python modules

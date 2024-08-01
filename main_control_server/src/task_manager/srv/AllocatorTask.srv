@@ -1,6 +1,8 @@
-string product_code
+string task_code
+string[] product_code_list # ['P02', 'P01', 'P03']
 string task_type
 ---
-string robot_name
-string goal_location
+string robot_name  
+string task_code 
+string[] rack_list  
 string task_assignment

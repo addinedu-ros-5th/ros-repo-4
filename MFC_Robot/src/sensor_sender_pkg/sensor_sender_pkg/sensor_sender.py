@@ -37,7 +37,11 @@ class SensorSender(Node):
         self.lidar_buffer = []
         
         # PC 서버 설정 (PC의 IP 주소를 사용)
-        self.pc_ip = '192.168.2.17'  # 예: PC의 IP 주소
+<<<<<<< HEAD
+        self.pc_ip = '192.168.2.31'  # 예: PC의 IP 주소
+=======
+        self.pc_ip = '172.30.1.49'  # 예: PC의 IP 주소
+>>>>>>> 851f0c2eb11d3f8adf70baf44094c1665f71ae88
         self.pc_port = 8080
         self.robot_id = 'robot_1'  # 로봇의 고유 ID 설정
         # self.robot_id = 'robot_2'  # 로봇의 고유 ID 설정

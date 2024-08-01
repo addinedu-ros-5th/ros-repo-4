@@ -8,6 +8,10 @@ import cv2
 import json
 import time
 import threading
+import signal
+
+# SIGPIPE 시그널을 무시하도록 설정
+signal.signal(signal.SIGPIPE, signal.SIG_IGN)
 
 class SensorSender(Node):
     def __init__(self):
@@ -21,13 +25,13 @@ class SensorSender(Node):
 
         self.image_subscription = self.create_subscription(
             Image,
-            '/image_raw/compressed',
+            '/camera/image_raw',
             self.image_callback,
             10)
         
         self.lidar_subscription = self.create_subscription(
             LaserScan,
-            '/scan',  # 라이다 토픽 이름을 적절히 변경하세요
+            '/scan',
             self.lidar_callback,
             qos_profile
             )
@@ -38,14 +42,15 @@ class SensorSender(Node):
         self.buffer_lock = threading.Lock()
         self.max_buffer_size = 100  # 버퍼의 최대 크기 설정
         
-        # PC 서버 설정 (PC의 IP 주소를 사용)
-        self.pc_ip = '192.168.2.17'  # 예: PC의 IP 주소
+        self.pc_ip = '192.168.2.17'
         self.pc_port = 8080
-        self.robot_id = 'robot_1'  # 로봇의 고유 ID 설정
+        self.robot_id = 'robot_1'
+
+        self.image_send_interval = 1 / 15  # 이미지 전송 주기 (초)
+        self.last_image_send_time = 0
 
         self.connected = False
-        self.connection_thread = threading.Thread(target=self.connect_to_server)
-        self.connection_thread.start()
+        self.connect_to_server()
     
     def connect_to_server(self):
         while not self.connected:
@@ -58,24 +63,39 @@ class SensorSender(Node):
                 print(f"Failed to connect to server: {e}, retrying in 1 second...")
                 time.sleep(1)
     
+    def close_connection(self):
+        if self.client_socket:
+            try:
+                self.client_socket.shutdown(socket.SHUT_RDWR)
+            except:
+                pass
+            self.client_socket.close()
+            self.connected = False
+            print("Connection closed")
+
     def image_callback(self, msg):
+        current_time = time.time()
+        if current_time - self.last_image_send_time < self.image_send_interval:
+            return
+        self.last_image_send_time = current_time
+
         cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
-        
-        # 이미지를 JPEG 형식으로 인코딩
+
+        # 이미지를 320x240으로 리사이즈
+        cv_image = cv2.resize(cv_image, (320, 240))
+
         _, buffer = cv2.imencode('.jpg', cv_image)
         image_data = buffer.tobytes()
         image_timestamp = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
         
-        # 이미지 버퍼에 추가
         with self.buffer_lock:
             if len(self.image_buffer) >= self.max_buffer_size:
-                self.image_buffer.pop(0)  # 가장 오래된 데이터 제거
+                self.image_buffer.pop(0)
             self.image_buffer.append((image_data, image_timestamp))
         
         self.send_data()
 
     def lidar_callback(self, msg):
-        # 라이다 데이터를 JSON 형식으로 변환
         lidar_data = {
             'angle_min': msg.angle_min,
             'angle_max': msg.angle_max,
@@ -84,10 +104,9 @@ class SensorSender(Node):
         }
         lidar_timestamp = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
         
-        # 라이다 버퍼에 추가
         with self.buffer_lock:
             if len(self.lidar_buffer) >= self.max_buffer_size:
-                self.lidar_buffer.pop(0)  # 가장 오래된 데이터 제거
+                self.lidar_buffer.pop(0)
             self.lidar_buffer.append((lidar_data, lidar_timestamp))
         
         self.send_data()
@@ -100,12 +119,10 @@ class SensorSender(Node):
             if not self.image_buffer or not self.lidar_buffer:
                 return
         
-            # 타임스탬프를 기준으로 가장 최근의 이미지와 라이다 데이터 찾기
             image_data, image_timestamp = self.image_buffer[-1]
             lidar_data, lidar_timestamp = min(self.lidar_buffer, key=lambda x: abs(x[1] - image_timestamp))
             
-            # 이미지와 라이다 데이터의 타임스탬프가 일치하는지 확인
-            if abs(image_timestamp - lidar_timestamp) > 0.1:  # 100ms 이내로 동기화
+            if abs(image_timestamp - lidar_timestamp) > 0.1:
                 return
 
             lidar_json = json.dumps(lidar_data).encode('utf-8')
@@ -113,39 +130,24 @@ class SensorSender(Node):
             lidar_length = len(lidar_json)
             robot_id_encoded = self.robot_id.encode('utf-8')
             robot_id_length = len(robot_id_encoded)
-            total_length = 12 + image_length + lidar_length + robot_id_length
+            total_length = 4 + robot_id_length + 4 + image_length + 4 + lidar_length
 
             print(f"Sending total data of length: {total_length}")
 
             try:
-                # 로봇 ID 길이 전송
-                self.client_socket.sendall(robot_id_length.to_bytes(4, 'big'))
-                
-                # 로봇 ID 전송
-                self.client_socket.sendall(robot_id_encoded)
-                
-                # 데이터 길이 전송
                 self.client_socket.sendall(total_length.to_bytes(4, 'big'))
-
-                # 이미지 데이터 길이 전송
+                self.client_socket.sendall(robot_id_length.to_bytes(4, 'big'))
+                self.client_socket.sendall(robot_id_encoded)
                 self.client_socket.sendall(image_length.to_bytes(4, 'big'))
-
-                # 이미지 데이터 전송
                 self.client_socket.sendall(image_data)
-
-                # 라이다 데이터 길이 전송
                 self.client_socket.sendall(lidar_length.to_bytes(4, 'big'))
-
-                # 라이다 데이터 전송
                 self.client_socket.sendall(lidar_json)
 
                 print("Data sent")
-            except socket.error as e:
+            except (socket.error, BrokenPipeError) as e:
                 print(f"Socket error: {e}, reconnecting...")
-                self.connected = False
-                self.connection_thread = threading.Thread(target=self.connect_to_server)
-                self.connection_thread.start()
-                self.send_data()  # 재연결 후 다시 데이터 전송 시도
+                self.close_connection()
+                self.connect_to_server()
 
 def main(args=None):
     rclpy.init(args=args)

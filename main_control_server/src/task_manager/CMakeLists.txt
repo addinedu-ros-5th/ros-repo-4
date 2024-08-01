@@ -27,12 +27,21 @@ install(
 
 install(
   PROGRAMS src/task_manager_node.py
-  PROGRAMS src/order_list.py
+
   DESTINATION lib/${PROJECT_NAME}
   PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
               GROUP_EXECUTE GROUP_READ
               WORLD_EXECUTE WORLD_READ
 )
+
+# Install Python modules
+install(
+  DIRECTORY src/modules
+  DESTINATION lib/${PROJECT_NAME}
+  FILES_MATCHING PATTERN "*.py"
+)
+
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
