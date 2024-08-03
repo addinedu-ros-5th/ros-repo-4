@@ -31,13 +31,13 @@ class AStarPlanner:
 
     def load_map(self):
         print("Loading map start!")
-        map_yaml_file = '/home/ys/ros-repo-4/ros-repo-4/MFC_Robot/src/lrobot/maps/mfc.yaml'
+        map_yaml_file = '/home/ys/5-ros-repo-4/lrobot/src/lrobot/maps/mfc_map.yaml'
         map_yaml_data = yaml.full_load(open(map_yaml_file))
 
         self.map_resolution = map_yaml_data['resolution']    # m / pixel
         self.map_origin = map_yaml_data['origin'][:2]    # list
         
-        map_pgm_file = '/home/ys/ros-repo-4/ros-repo-4/MFC_Robot/src/lrobot/maps/mfc.pgm'
+        map_pgm_file = '/home/ys/5-ros-repo-4/lrobot/src/lrobot/maps/mfc_map.pgm'
 
         with open(map_pgm_file, 'rb') as pgmf:
             pgm_data = pgmf.readlines()
@@ -307,14 +307,14 @@ class AStarPlanner:
 #     if len(tpx) > 1:
 #         ax.plot(tpx, tpy, "-r", label='Path')  # 경로를 이어주는 선을 추가
 #     ax.set_aspect('equal')
-#     ax.legend()
+#     # ax.legend()
 #     plt.show()
 
 # def main():
 #     print(__file__ + " start!!")
 
 #     grid_size = 1  # [m]
-#     robot_radius = 0.2  # [m]
+#     robot_radius = 0.3  # [m]
 #     padding = 1
 
 #     a_star = AStarPlanner(grid_size, robot_radius, padding)
@@ -322,8 +322,8 @@ class AStarPlanner:
 #     # start and goal position
 #     sx = 0  # [m]
 #     sy = 0  # [m]
-#     gx = -0.03  # [m]
-#     gy = 1.56  # [m]
+#     gx = 0.85  # [m]
+#     gy = -0.84  # [m]
 
 #     rx, ry, tpx, tpy, tvec_x, tvec_y = a_star.planning(sx, sy, gx, gy)
 
