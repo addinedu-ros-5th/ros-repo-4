@@ -19,7 +19,7 @@ from task_manager.msg import SendAllocationResults
 
 def get_mysql_connection():
     try:
-        db_instance = Connect("team4", "0444")
+        db_instance = Connect("root", "asdf")
         return db_instance
     except con.Error as err:
         print(f"Error: {err}")
