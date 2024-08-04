@@ -20,8 +20,8 @@ print(f"Server listening on {server_ip}:{server_port}")
 class DetectionClient(Node):
     def __init__(self):
         super().__init__('detection_client')
-        self.publisher = self.create_publisher(String, 'result_topic_robo_1', 10)
-        self.robot_id = 'robot_1'  # Add robot_id as a member variable
+        self.publisher = self.create_publisher(String, 'result_topic_robo_2', 10)
+        self.robot_id = 'robot_2'  # Add robot_id as a member variable
 
     def send_detection_data(self, labels, distances):
         detection_data = {
@@ -60,33 +60,27 @@ def main():
                     distances = []
                     detected_people = False
                     annotated_image = image.copy()
-                    image_center = image.shape[1] // 2
-                    detection_range_left = image_center - 100
-                    detection_range_right = image_center + 100
-
                     for result in results:
                         for box in result.boxes:
                             if box.cls == 0 and box.conf > 0.7:
+                                detected_people = True
                                 x1, y1, x2, y2 = map(int, box.xyxy[0])
-                                box_center_x = (x1 + x2) // 2
-                                if detection_range_left <= box_center_x <= detection_range_right:
-                                    detected_people = True
-                                    distance = distance_calculator.calculate_distance(
-                                        lidar_data,
-                                        (x1, y1, x2, y2),
-                                        image.shape[1],
-                                        0.07,
-                                        0.02
-                                    )
-                                    labels.append('person')
-                                    distances.append(distance)
-                                    label = f"person {distance:.2f}m"
-                                    cv2.rectangle(annotated_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                                    cv2.putText(annotated_image, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-                                    x_center = (x1 + x2) // 2
-                                    y_center = (y1 + y2) // 2
-                                    cv2.circle(annotated_image, (x_center, y_center), 5, (0, 0, 255), -1)
-                                    print(label)
+                                distance = distance_calculator.calculate_distance(
+                                    lidar_data,
+                                    (x1, y1, x2, y2),
+                                    image.shape[1],
+                                    0.07,
+                                    0.02
+                                )
+                                labels.append('person')
+                                distances.append(distance)
+                                label = f"person {distance:.2f}m"
+                                cv2.rectangle(annotated_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                                cv2.putText(annotated_image, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+                                x_center = (x1 + x2) // 2
+                                y_center = (y1 + y2) // 2
+                                cv2.circle(annotated_image, (x_center, y_center), 5, (0, 0, 255), -1)
+                                print(label)
 
                     if labels and distances:
                         detection_client.send_detection_data(labels, distances)

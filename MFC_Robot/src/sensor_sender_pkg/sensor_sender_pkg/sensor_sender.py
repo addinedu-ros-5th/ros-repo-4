@@ -70,6 +70,7 @@ class SensorSender(Node):
         self.send_data()
 
     def lidar_callback(self, msg):
+
         # 라이다 데이터를 JSON 형식으로 변환
         lidar_data = {
             'angle_min': msg.angle_min,

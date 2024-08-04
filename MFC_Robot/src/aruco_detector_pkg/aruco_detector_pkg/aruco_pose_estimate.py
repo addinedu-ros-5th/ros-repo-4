@@ -48,13 +48,13 @@ class ArucoCmdVelPublisher(Node):
             # result_topic을 subscribe
             self.result_subscription = self.create_subscription(
                 String,
-                'result_topic_1',
+                'robo_1/result_topic',
                 self.result_callback,
                 10
             )
 
             # 조정완료 토픽 퍼블리셔
-            self.adjustment_complete_publisher = self.create_publisher(String, 'arrive_topic_1', 10)
+            self.adjustment_complete_publisher = self.create_publisher(String, 'robo_1/arrive_topic', 10)
 
             self.get_logger().info('Initialization complete.')
 

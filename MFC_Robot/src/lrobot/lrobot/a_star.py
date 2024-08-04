@@ -31,15 +31,24 @@ class AStarPlanner:
 
     def load_map(self):
         print("Loading map start!")
-        map_yaml_file = '/home/ys/5-ros-repo-4/lrobot/src/lrobot/maps/mfc_map.yaml'
+        map_yaml_file = '/home/addinedu/final_project/ros-repo-4/MFC_Robot/src/lrobot/maps/mfc_map.yaml'
+        
+        # current_dir = os.path.dirname(os.path.abspath(__file__))
+        # map_yaml_file = os.path.join(current_dir, "../maps/mfc_map.yaml")
+        # yaml_file_path = os.path.abspath(map_yaml_file)
+       
         map_yaml_data = yaml.full_load(open(map_yaml_file))
 
         self.map_resolution = map_yaml_data['resolution']    # m / pixel
         self.map_origin = map_yaml_data['origin'][:2]    # list
         
-        map_pgm_file = '/home/ys/5-ros-repo-4/lrobot/src/lrobot/maps/mfc_map.pgm'
+        map_pgm_file = '/home/addinedu/final_project/ros-repo-4/MFC_Robot/src/lrobot/maps/mfc_map.pgm'
+        # current_dir = os.path.dirname(os.path.abspath(__file__))
+        # map_pgm_file = os.path.join(current_dir, "../maps/mfc_map.pgm")
+        pgm_file_path = os.path.abspath(map_pgm_file)
 
-        with open(map_pgm_file, 'rb') as pgmf:
+
+        with open(pgm_file_path, 'rb') as pgmf:
             pgm_data = pgmf.readlines()
             map_width, map_height = map(int, pgm_data[1].split())
             map_data = np.array(list(map(int, pgm_data[3])))
