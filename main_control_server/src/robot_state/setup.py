@@ -21,7 +21,6 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'test_amcl_subscriber = robot_state.test_amcl_subscriber:main',
             'robot_state_manager_node = robot_state.robot_state_manager_node:main',
             'robot_task_client = robot_state.robot_task_client:main',                #new
             'robot_task_server = robot_state.robot_task_server:main',                #new

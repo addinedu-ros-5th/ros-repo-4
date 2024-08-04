@@ -4,26 +4,30 @@ from std_msgs.msg import String
 from geometry_msgs.msg import Twist
 import json
 
-class RobotClient(Node):
-    def __init__(self, robot_id):
-        super().__init__('robot_client')
-        self.robot_id = robot_id
-        self.cmd_vel_publisher = self.create_publisher(Twist, 'base_controller/cmd_vel_unstamped', 10)
-        self.obstacle_publisher = self.create_publisher(String, 'obstacle_topic', 10)
-
-        self.detection_subscription = self.create_subscription(
+class DetectionServer(Node):
+    def __init__(self):
+        super().__init__('detection_server')
+        self.publisher_ = self.create_publisher(String, 'robot_command_topic', 10)
+        self.subscription = self.create_subscription(
             String,
-            f'detection_result/{self.robot_id}',
+            'detection_topic',
             self.listener_callback,
             10
         )
-        self.cmd_vel_subscription = self.create_subscription(
+        self.velocity_subscription = self.create_subscription(
             Twist,
-            'base_controller/cmd_vel_unstamped',
-            self.cmd_vel_callback,
+            'cmd_vel',
+            self.velocity_callback,
             10
         )
-        self.obstacle_detected = False  # 장애물이 감지되었는지 추적
+        self.subscription
+        self.is_robot_stopped = False  # 로봇이 정지 상태인지 추적
+
+    def velocity_callback(self, msg):
+        if msg.linear.x == 0.0 and msg.angular.z == 0.0:
+            self.is_robot_stopped = True
+        else:
+            self.is_robot_stopped = False
 
     def listener_callback(self, msg):
         detection_data = json.loads(msg.data)
@@ -31,38 +35,21 @@ class RobotClient(Node):
         distances = detection_data['distances']
         for label, distance in zip(labels, distances):
             self.get_logger().info(f"Detected {label}, {distance:.2f}m")
-            if label == "person" and distance <= 0.2:
-                if not self.obstacle_detected:
-                    self.obstacle_detected = True
-                    stop_command = Twist()
-                    stop_command.linear.x = 0.0
-                    stop_command.angular.z = 0.0
-                    self.cmd_vel_publisher.publish(stop_command)
-                    obstacle_msg = String()
-                    obstacle_msg.data = "obstacle"
-                    self.obstacle_publisher.publish(obstacle_msg)
-                    self.get_logger().info("STOP command sent to the robot due to obstacle detection")
-                return  # 장애물 감지 시 추가 명령 처리 중단
-        if self.obstacle_detected:
-            self.obstacle_detected = False
-            free_msg = String()
-            free_msg.data = "clear"
-            self.obstacle_publisher.publish(free_msg)
-            self.get_logger().info("Obstacle cleared, free command sent to the robot")
-
-    def cmd_vel_callback(self, msg):
-        if self.obstacle_detected:
-            self.get_logger().info("Obstacle detected, ignoring cmd_vel message")
-            return
-        self.cmd_vel_publisher.publish(msg)
-        self.get_logger().info("cmd_vel message forwarded to the robot")
+            if label == "person" and distance <= 0.3:
+                if not self.is_robot_stopped:  # 로봇이 정지 상태가 아니면
+                    stop_command = String()
+                    stop_command.data = "STOP"
+                    self.publisher_.publish(stop_command)
+                    self.get_logger().info("STOP command sent to the robot")
+            else:
+                if self.is_robot_stopped:  # 로봇이 정지 상태이면
+                    self.is_robot_stopped = False  # 로봇이 움직이는 상태로 변경
 
 def main(args=None):
     rclpy.init(args=args)
-    robot_id = 'robot_1'  # 각 로봇의 고유 ID 설정
-    robot_client = RobotClient(robot_id)
-    rclpy.spin(robot_client)
-    robot_client.destroy_node()
+    detection_server = DetectionServer()
+    rclpy.spin(detection_server)
+    detection_server.destroy_node()
     rclpy.shutdown()
 
 if __name__ == '__main__':

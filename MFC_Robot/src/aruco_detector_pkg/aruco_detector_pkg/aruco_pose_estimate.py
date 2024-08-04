@@ -67,7 +67,6 @@ class ArucoCmdVelPublisher(Node):
         self.get_logger().info(f'Result state updated to: {self.result_state}')
 
     def image_callback(self, msg):
-
         if self.result_state != "ADJUSTING":
             self.get_logger().info('Aruco marker detection is currently not allowed.')
             return
@@ -91,7 +90,6 @@ class ArucoCmdVelPublisher(Node):
                     )
 
                     if ret:
-                        twist = Twist()
                         if not self.angle_aligned:
                             # 마커의 중심 좌표 계산
                             center_x = (marker_corner_2d[0][0] + marker_corner_2d[2][0]) / 2.0
@@ -113,6 +111,7 @@ class ArucoCmdVelPublisher(Node):
                         else:
                             # 마커와의 거리가 20cm보다 크면 전진, 작으면 후진
                             distance = np.sqrt(tVec[0][0]**2 + tVec[1][0]**2 + tVec[2][0]**2)
+                            twist = Twist()
                             if distance > 20:
                                 twist.linear.x = 0.1
                                 twist.angular.z = 0.0
@@ -136,7 +135,6 @@ class ArucoCmdVelPublisher(Node):
         except Exception as e:
             self.get_logger().error(f'Error in process_image: {e}')
 
-        # Check if the robot has been stationary for 3 seconds
         if self.last_stationary_time and (time.time() - self.last_stationary_time) >= 2:
             self.publish_adjustment_complete()
             self.result_state = "STOPPED"

@@ -14,7 +14,7 @@ dist_coef = calib_data["distCoef"]
 r_vectors = calib_data["rVector"]
 t_vectors = calib_data["tVector"]
 
-MARKER_SIZE = 7.5  # 센티미터 단위 #5.3, 3.2
+MARKER_SIZE = 3  # 센티미터 단위 #5.3, 3.2
 
 # 아루코 마커 사전 및 감지 파라미터 설정
 dictionary = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_4X4_50)

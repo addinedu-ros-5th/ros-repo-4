@@ -16,6 +16,7 @@ setup(
     entry_points={
         'console_scripts': [
             'communication_robot_node = network_manager.communication_robot_node:main',
+            'communication_MFC_arduino = network_manager.communication_MFC_arduino:main',
         ],
     },
 )
