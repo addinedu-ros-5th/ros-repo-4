@@ -37,15 +37,8 @@ class SensorSender(Node):
         self.lidar_buffer = []
         
         # PC 서버 설정 (PC의 IP 주소를 사용)
-<<<<<<< HEAD
-        self.pc_ip = '192.168.2.31'  # 예: PC의 IP 주소
-=======
-        self.pc_ip = '172.30.1.49'  # 예: PC의 IP 주소
->>>>>>> 851f0c2eb11d3f8adf70baf44094c1665f71ae88
+        self.pc_ip = '192.168.2.17'  # 예: PC의 IP 주소
         self.pc_port = 8080
-        self.robot_id = 'robot_1'  # 로봇의 고유 ID 설정
-        # self.robot_id = 'robot_2'  # 로봇의 고유 ID 설정
-
         self.connect_to_server()
     
     def connect_to_server(self):
@@ -110,19 +103,11 @@ class SensorSender(Node):
         lidar_json = json.dumps(lidar_data).encode('utf-8')
         image_length = len(image_data)
         lidar_length = len(lidar_json)
-        robot_id_encoded = self.robot_id.encode('utf-8')
-        robot_id_length = len(robot_id_encoded)
-        total_length = 8 + image_length + lidar_length + robot_id_length
+        total_length = 8 + image_length + lidar_length
 
         print(f"Sending total data of length: {total_length}")
 
         try:
-            # 로봇 ID 길이 전송
-            self.client_socket.sendall(robot_id_length.to_bytes(4, 'big'))
-            
-            # 로봇 ID 전송
-            self.client_socket.sendall(robot_id_encoded)
-            
             # 데이터 길이 전송
             self.client_socket.sendall(total_length.to_bytes(4, 'big'))
 

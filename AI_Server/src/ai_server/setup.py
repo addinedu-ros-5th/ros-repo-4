@@ -23,6 +23,7 @@ setup(
             'ai_server = ai_server.ai_main:main',
             'display_result = ai_server.display_result:main',
             'result_publisher = ai_server.result_publisher:main',
+            'test = ai_server.test1:main',
         ],
     },
 )

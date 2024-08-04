@@ -1,7 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
-from sensor_msgs.msg import CompressedImage, LaserScan
+from sensor_msgs.msg import Image, LaserScan
 from std_msgs.msg import String
 import cv2
 import numpy as np
@@ -10,10 +10,10 @@ from cv_bridge import CvBridge
 import threading
 import math
 import json
-import logging
 from ultralytics import YOLO
 import time
 from concurrent.futures import ThreadPoolExecutor
+import logging
 
 class DistanceCalculator:
     def calculate_distance(self, lidar_data, box, image_width, lidar_offset_forward, lidar_offset_downward):
@@ -38,8 +38,8 @@ class DistanceCalculator:
 class YoloDetector:
     def __init__(self, model_path='yolov5s.pt'):
         logging.getLogger("ultralytics").setLevel(logging.WARNING)
+
         self.model = YOLO(model_path)
-        print(f"YOLO 모델이 {model_path}에서 로드되었습니다")
 
     def detect_objects(self, image):
         results = self.model(image)
@@ -56,20 +56,20 @@ class ImageDisplayNode(Node):
         )
 
         self.image_sub_1 = self.create_subscription(
-            CompressedImage,
-            'image_raw/compressed_1',
+            Image,
+            '/camera/image_raw',
             self.image_callback_1,
             10)
 
         self.image_sub_2 = self.create_subscription(
-            CompressedImage,
-            'image_raw/compressed_2',
+            Image,
+            '/camera/image_raw_2',
             self.image_callback_2,
             10)
         
         self.lidar_sub_1 = self.create_subscription(
             LaserScan,
-            'scan_1',
+            'scan',
             self.lidar_callback_1,
             qos_profile
             )
@@ -97,37 +97,30 @@ class ImageDisplayNode(Node):
         self.last_detection_time_1 = 0
         self.last_detection_time_2 = 0
         self.detection_interval = 0.5  # 0.5초마다 객체 탐지 수행
-        print("ImageDisplayNode 초기화 완료")
 
     def image_callback_1(self, msg):
         try:
-            np_arr = np.frombuffer(msg.data, np.uint8)
-            image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
             resized_image = cv2.resize(image, (640, 480))
             with self.lock:
                 self.image_1 = resized_image
-            print("로봇 1에서 이미지 수신 및 크기 조정 완료")
         except Exception as e:
-            print(f"image_callback_1에서 오류 발생: {e}")
+            pass
 
     def image_callback_2(self, msg):
         try:
-            np_arr = np.frombuffer(msg.data, np.uint8)
-            image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
             resized_image = cv2.resize(image, (320, 240))
             with self.lock:
                 self.image_2 = resized_image
-            print("로봇 2에서 이미지 수신 및 크기 조정 완료")
         except Exception as e:
-            print(f"image_callback_2에서 오류 발생: {e}")
+            pass
 
     def lidar_callback_1(self, msg):
         self.lidar_data_1 = msg
-        print("로봇 1에서 라이다 데이터 수신")
         
     def lidar_callback_2(self, msg):
         self.lidar_data_2 = msg
-        print("로봇 2에서 라이다 데이터 수신")
 
     def send_detection_data(self, robot_id, labels, distances):
         detection_data = {
@@ -138,12 +131,10 @@ class ImageDisplayNode(Node):
         msg = String()
         msg.data = json.dumps(detection_data)
         self.publisher.publish(msg)
-        print(f"{robot_id}에 대한 탐지 데이터 전송 완료")
 
     def detect_and_annotate(self, image, lidar_data, robot_id):
         try:
             results = self.yolo_detector.detect_objects(image)
-            print(f"{robot_id}에 대한 YOLO 탐지 수행 완료")
 
             img_center_x = image.shape[1] // 2
 
@@ -174,17 +165,12 @@ class ImageDisplayNode(Node):
                             x_center = (x1 + x2) // 2
                             y_center = (y1 + y2) // 2
                             cv2.circle(annotated_image, (x_center, y_center), 5, (0, 0, 255), -1)
-                            print(label)
 
             if labels and distances:
                 self.send_detection_data(robot_id, labels, distances)
 
-            if not detected_people:
-                print("지정된 범위 내에서 사람이 탐지되지 않음")
-
             return annotated_image
         except Exception as e:
-            print(f"detect_and_annotate에서 오류 발생: {e}")
             return image
 
     def display_images(self):
@@ -202,7 +188,7 @@ class ImageDisplayNode(Node):
                             executor.submit(self.process_image, self.image_2, self.lidar_data_2, 'robot_2')
                     cv2.waitKey(1)
                 except Exception as e:
-                    print(f"display_images에서 오류 발생: {e}")
+                    pass
 
     def process_image(self, image, lidar_data, robot_id):
         try:
@@ -210,7 +196,7 @@ class ImageDisplayNode(Node):
             if annotated_image.shape[0] > 0 and annotated_image.shape[1] > 0:
                 cv2.imshow(f"Image from {robot_id}", annotated_image)
         except Exception as e:
-            print(f"process_image에서 오류 발생: {e}")
+            pass
 
 def main(args=None):
     try:
@@ -225,7 +211,7 @@ def main(args=None):
             rclpy.shutdown()
             cv2.destroyAllWindows()
     except Exception as e:
-        print(f"main에서 오류 발생: {e}")
+        pass
 
 if __name__ == '__main__':
     main()

@@ -42,11 +42,11 @@ class SensorSender(Node):
         self.buffer_lock = threading.Lock()
         self.max_buffer_size = 100  # 버퍼의 최대 크기 설정
         
-        self.pc_ip = '192.168.2.17'
+        self.pc_ip = '192.168.1.17'
         self.pc_port = 8080
         self.robot_id = 'robot_1'
 
-        self.image_send_interval = 1 / 15  # 이미지 전송 주기 (초)
+        self.image_send_interval = 1/15 # 이미지 전송 주기 (초)
         self.last_image_send_time = 0
 
         self.connected = False
