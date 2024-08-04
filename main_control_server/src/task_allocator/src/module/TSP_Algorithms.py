@@ -1,8 +1,4 @@
-import random
-from collections import Counter
 import numpy as np
-from itertools import permutations
-import time
 
 # 6개의 원을 3행 2열로 배치
 positions = {
@@ -14,92 +10,78 @@ positions = {
     'RF': (1, 3)
 }
 
-# 앞줄 렉 (로봇과 가까운 쪽)
-front_racks = {'RD', 'RE', 'RF'}
+# 로봇 정보
+robots = {
+    'Robo1': {'battery_level': 80, 'position': 'RD', 'total_workload': 2},
+    'Robo2': {'battery_level': 60, 'position': 'RE', 'total_workload': 1},
+    'Robo3': {'battery_level': 50, 'position': 'RF', 'total_workload': 3}
+}
 
-# 원 선택 함수
-def select_nodes():
-    racks = ['RA', 'RB', 'RC', 'RD', 'RE', 'RF']
-    num_items = random.randint(6, 18)
-    items = []
-    while len(items) < num_items:
-        rack = random.choice(racks)
-        if items.count(rack) < 3:
-            items.append(rack)
-    return items
+# 물품의 위치
+product_to_location = {
+    "P01": "RA", "P02": "RA", "P03": "RA",
+    "P04": "RB", "P05": "RB", "P06": "RB",
+    "P07": "RC", "P08": "RC", "P09": "RC",
+    "P10": "RD", "P11": "RD", "P12": "RD",
+    "P13": "RE", "P14": "RE", "P15": "RE",
+    "P16": "RF", "P17": "RF", "P18": "RF"
+}
 
-# 거리 행렬 생성 함수
-def create_distance_matrix(nodes, positions):
-    unique_nodes = list(set(nodes))
-    n = len(unique_nodes)
-    dists = np.zeros((n, n))
-    for i, u in enumerate(unique_nodes):
-        for j, v in enumerate(unique_nodes):
-            if i != j:
-                dists[i][j] = np.linalg.norm(np.array(positions[u]) - np.array(positions[v]))
-    return dists, unique_nodes
+# # 거리 계산 함수
+# def calculate_distance(pos1, pos2):
+#     return np.linalg.norm(np.array(pos1) - np.array(pos2))
 
-# 경로 길이 계산 함수
-def calculate_path_length(path, dists, node_indices):
-    length = 0
-    for i in range(len(path) - 1):
-        length += dists[node_indices[path[i]]][node_indices[path[i + 1]]]
-    length += dists[node_indices[path[-1]]][node_indices[path[0]]]  # 마지막 위치에서 시작 위치로 돌아오는 거리 추가
-    return length
+# 비용 계산 함수
+def calculate_cost(robot, task_racks, positions, max_distance):
+    battery_factor = (100 - robot['battery_level']) / 100
+    distance_factor = sum(calculate_distance(positions[robot['position']], positions[rack]) for rack in task_racks) / max_distance
+    workload_factor = robot['total_workload'] / 3
+    return battery_factor + distance_factor + workload_factor
 
-# 최근접 이웃 알고리즘 함수
-def nearest_neighbor_algorithm(nodes, dists, start_index=0):
-    n = len(nodes)
-    node_indices = {node: i for i, node in enumerate(nodes)}
-    path = [nodes[start_index]]
-    visited = {nodes[start_index]}
-    while len(path) < n:
-        last = path[-1]
-        next_node = min((dists[node_indices[last]][node_indices[node]], node) for node in nodes if node not in visited)[1]
-        path.append(next_node)
-        visited.add(next_node)
-    return path, calculate_path_length(path, dists, node_indices)
+# 경매 기반 작업 할당 함수
+def auction_based_task_allocation(tasks, robots, positions):
+    max_distance = max(calculate_distance(positions[r1], positions[r2]) for r1 in positions for r2 in positions)
+    task_allocations = []
 
-# 같은 렉을 한 번에 방문하도록 최적화 함수
-def optimize_robot_path(selected_nodes, positions):
-    unique_nodes = list(set(selected_nodes))
-    dists, unique_nodes = create_distance_matrix(unique_nodes, positions)
+    for task_id, (task_code, task_products) in enumerate(tasks.items()):
+        task_racks = [product_to_location[product] for product in task_products]
+        print(f"\nStarting auction for {task_code} with racks {task_racks}")
+        min_cost = float('inf')
+        selected_robot = None
+        for robot_name, robot in robots.items():
+            cost = calculate_cost(robot, task_racks, positions, max_distance)
+            print(f"  Robot {robot_name} cost calculation: {cost:.4f} (Battery: {(100 - robot['battery_level']) / 100:.2f}, Distance: {sum(calculate_distance(positions[robot['position']], positions[rack]) for rack in task_racks) / max_distance:.2f}, Workload: {robot['total_workload'] / 3:.2f})")
+            if cost < min_cost:
+                min_cost = cost
+                selected_robot = robot_name
+        robots[selected_robot]['total_workload'] += len(task_racks)
+        robots[selected_robot]['position'] = task_racks[-1]  # 마지막 위치로 로봇의 위치 업데이트
+        task_allocations.append({
+            'task_code': task_code,
+            'robot_name': selected_robot,
+            'rack_list': task_racks
+        })
+        print(f"  {task_code} assigned to {selected_robot} with cost {min_cost:.4f}")
 
-    # 시작 인덱스 설정
-    start_index = next((i for i, node in enumerate(unique_nodes) if node in front_racks), 0)
-
-    # 최적 경로 계산 (근사 알고리즘 사용)
-    path, length = nearest_neighbor_algorithm(unique_nodes, dists, start_index)
-
-    return path, length
+    return task_allocations
 
 # 메인 함수
 def main():
-    # 랜덤으로 6개에서 18개의 원 선택, 같은 원은 최대 3개까지
-    selected_items = select_nodes()
-    print("Selected Items:", selected_items)
-    print("Item Counts:", Counter(selected_items))
+    # 예제 작업 리스트
+    tasks = {
+        'Task_1': ['P16', 'P17', 'P18'],
+        'Task_2': ['P10', 'P11'],
+        'Task_3': ['P01', 'P02', 'P03']
+    }
 
-    # 물건을 로봇이 싣을 수 있는 단위로 분리
-    item_counts = Counter(selected_items)
-    batches = []
-    for rack, count in item_counts.items():
-        for _ in range(count // 3):
-            batches.append([rack] * 3)
-        if count % 3:
-            batches.append([rack] * (count % 3))
+    # 경매 기반 작업 할당
+    task_allocations = auction_based_task_allocation(tasks, robots, positions)
 
-    total_path = []
-    total_length = 0
-
-    # 각 배치에 대해 최적 경로 계산
-    for batch in batches:
-        path, length = optimize_robot_path(batch, positions)
-        total_path.extend(path)
-        total_length += length
-
-    print(f"Total Path: {total_path}")
-    print(f"Total Path Length: {total_length}")
+    for allocation in task_allocations:
+        print(f"\nTask Code: {allocation['task_code']}")
+        print(f"Assigned Robot: {allocation['robot_name']}")
+        print(f"Rack List: {allocation['rack_list']}")
+        print(f"Task Assignment: 입고")
 
 if __name__ == "__main__":
     main()

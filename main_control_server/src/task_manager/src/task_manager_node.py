@@ -30,6 +30,7 @@ class OrderListService(Node):
         self.inspected_items_count = 0
         self.current_task_code = None # 현재 그룹의 task_code를 저장할 변수 추가
         self.product_code_list = []  # 현재 그룹의 product_code 리스트를 저장할 변수 추가
+        self.robot_info = None  # 로봇 정보를 저장할 변수 삐삐 뽀뽀~
 
 
 
@@ -91,6 +92,7 @@ class OrderListService(Node):
         future = self.client.call_async(request)       
         future.add_done_callback(self.callback_response)  # 응답 콜백 설정
 
+
     def task_progress_callback(self, msg):                                                  # new
         self.get_logger().info(f'Received task progress from robot_state_manager: {msg.robot_name}')                       
         self.get_logger().info(f'Current Rack: {msg.current_rack}')                                                   
@@ -101,18 +103,28 @@ class OrderListService(Node):
         try:
             response = future.result()
             self.get_logger().info(f'Received response: \n{response.robot_name}, {response.status}, {response.battery_status} ')
+            self.robot_info = response  # 로봇 정보를 저장
+            print(self.robot_info)
         except Exception as e:
             self.get_logger().error(f'Failed to receive response: {e}')
+            self.robot_info = None
 
     def generate_order_callback(self, request, response):
         random_items = self.order_list_node.get_random_order_list()  # 랜덤 주문 리스트 생성
 
-        # 아이템 ID 리스트 생성
-        order_list = [item.item_id for item in random_items]
-
+        # 중복 제거를 위해 아이템 ID 리스트를 집합으로 변환 후 다시 리스트로 변환
+        order_list = list(set(item.item_id for item in random_items))
+        
         # 그룹핑된 아이템 목록 생성
-        grouped_items = group_items(order_list)
+        self.inspection_index = 0  # 초기화 추가
+        self.inspection_started = False  # 초기화 추가
+        self.current_task_code = None  # 초기화 추가
+        self.product_code_list = []  # 초기화 추가
+        self.grouped_items = []  # 초기화 추가
 
+        grouped_items = group_items(order_list)
+        
+        print(f"{grouped_items}")
         task_code = 1
         for group in grouped_items:
             for product_code in group:
@@ -177,7 +189,7 @@ class OrderListService(Node):
 
     
     def get_items_to_inspect(self):
-        db_connection = Connect("team4", "0444")
+        db_connection = Connect("root", "asdf")
         cursor = db_connection.cursor
         cursor.execute("SELECT COUNT(*) FROM Inbound_Manager WHERE Status = '입하완료'")
         self.total_items_to_inspect = cursor.fetchone()[0]
@@ -200,7 +212,7 @@ class OrderListService(Node):
             self.get_logger().info('No more items to inspect.')
 
     def get_item_from_db(self, item_id):
-        db_connection = Connect("team4", "0444")
+        db_connection = Connect("root", "asdf")
         cursor = db_connection.cursor
         cursor.execute("SELECT * FROM Inbound_Manager WHERE Product_Code = %s", (item_id,))
         row = cursor.fetchone()
@@ -231,21 +243,23 @@ class OrderListService(Node):
 
         # 다음 인덱스가 현재 작업 코드와 다를 경우
         if (self.inspection_index < len(self.grouped_items) and self.grouped_items[self.inspection_index][0] != self.current_task_code):
-            self.send_task_allocation_request(self.current_task_code, self.product_code_list,"입고")
+            self.updateDB_client()
+            self.send_task_allocation_request(self.current_task_code, self.product_code_list,"입고", self.robot_info)
             self.product_code_list = [] #list초기화
 
         # 모든 검수가 완료되었을 경우
         if self.inspected_items_count == self.total_items_to_inspect:
+            self.updateDB_client()
+            self.send_task_allocation_request(self.current_task_code, self.product_code_list,"입고", self.robot_info)
             self.get_logger().info('All inspections complete. Sending task allocation requests.')
-            self.send_task_allocation_request(self.current_task_code, self.product_code_list,"입고")
 
         # else:
         self.process_next_item()
-
+    
 
         
     def update_status_in_db(self, product_code, status):        
-        db_connection = Connect("team4", "0444")
+        db_connection = Connect("root", "asdf")
         if not db_connection.conn or not db_connection.cursor:
             self.get_logger().error("Failed to connect to the database")
             return
@@ -270,11 +284,19 @@ class OrderListService(Node):
         self.get_logger().info(f'Sent GUI update signal for product {product_code} with status {status}')
 
 
-    def send_task_allocation_request(self,  task_code, product_code_list,task_type):
+    def send_task_allocation_request(self,  task_code, product_code_list,task_type,robot_info=None):
         request = AllocatorTask.Request()
         request.task_code = f"Task_{task_code}"
         request.product_code_list = product_code_list
         request.task_type = task_type
+
+        # 로봇 정보를 request에 추가
+        if robot_info:
+            request.robot_name = robot_info.robot_name
+            request.battery_status = robot_info.battery_status
+            request.status = robot_info.status
+            # request.estimated_completion_time = robot_info.estimated_completion_time
+
         self.future = self.task_allocator_client.call_async(request)
         self.get_logger().info(f'Sending task allocation request for task_code: task_{task_code} with product_code_list: {product_code_list}')
         self.future.add_done_callback(self.handle_task_allocation_response)
@@ -302,11 +324,12 @@ class OrderListService(Node):
         
         self.get_logger().info(f'Published task assignment for robot: {robot_name}')
 
+    
 
 class Connect():
     def __init__(self, User, Password):
         self.conn = con.connect(
-            host='database-1.cdigc6umyoh0.ap-northeast-2.rds.amazonaws.com',
+            # host='database-1.cdigc6umyoh0.ap-northeast-2.rds.amazonaws.com',
             user=User,
             password=Password,
             database='DFC_system_db'

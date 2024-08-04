@@ -8,11 +8,15 @@
 // const char* ssid = "902";
 // const char* password = "22177070";
 
-const char* ssid = "addinedu_class_1(2.4G)";
-const char* password = "addinedu1";
+// const char* ssid = "addinedu_class_1(2.4G)";
+// const char* password = "addinedu1";
 
 // const char* ssid = "CLL5G";
 // const char* password = "cll16661140";
+
+
+const char* ssid = "Tmwlakfk_>u<";
+const char* password = "96989898";
 
 #define SLAVE1_ADDR 0x08
 #define SLAVE2_ADDR 0x09
@@ -24,8 +28,14 @@ const long interval = 1000; // 1초 간격
 
 // String MFCNetworkManagerIP = "172.30.1.28"; // network_manager IP 주소 탐탐
 // String MFCNetworkManagerIP = "192.168.0.15"; // network_manager IP 주소 쬰지네
-String MFCNetworkManagerIP = "192.168.2.28"; // network_manager IP 주소 학원
+// String MFCNetworkManagerIP = "192.168.2.28"; // network_manager IP 주소 학원
+String MFCNetworkManagerIP = "192.168.1.104"; // network_manager IP 주소 학원
 const uint16_t networkManagerPort = 12345;
+
+
+// String slave3IP = "192.168.2.84"; // 슬레이브 3 IP 주소(ESP32 RACK LED) 학원
+String slave3IP = "192.168.1.106"; // 슬레이브 3 IP 주소(ESP32 RACK LED) >ㅁ<
+const uint16_t slave3Port = 80; // 슬레이브 보드의 서버 포트
 
 void setup() {
   Serial.begin(9600);
@@ -78,7 +88,20 @@ void handleClientRequest() {
             client.println("Inspection started for product: " + productCode + " with quantity: " + quantity);
           }
         }
-        // 다른 요청을 처리하기 위한 조건문을 추가하세요.
+        
+        if (request.startsWith("START-입고:")) {
+          int firstSeparator = request.indexOf('[');
+          int secondSeparator = request.indexOf(']', firstSeparator + 1);
+          
+          if (firstSeparator != -1 && secondSeparator != -1) {
+            String rackList = request.substring(firstSeparator + 1, secondSeparator);
+            rackList.trim();
+            Serial.println("Received rack list: " + rackList);
+            sendCommandToSlave(slave3IP, rackList);
+
+            client.println("Inspection started for racks: " + rackList);
+          }
+        }
       }
     }
     client.stop();
@@ -93,7 +116,6 @@ void checkInspectionComplete() {
 
     // 슬레이브로부터 검사 완료 데이터를 요청
     requestInspectionComplete(SLAVE1_ADDR);
-    requestInspectionComplete(SLAVE2_ADDR);
   }
 }
 
@@ -103,7 +125,16 @@ void sendCommandToArduino(uint8_t address, String command) {
   Wire.endTransmission();
 }
 
-
+void sendCommandToSlave(String slaveIP, String command) {
+  WiFiClient client;
+  if (client.connect(slaveIP.c_str(), slave3Port)) {
+    client.println(command);
+    client.stop();
+    Serial.println("Sent command to slave: " + slaveIP + " Command: " + command);
+  } else {
+    Serial.println("Connection to slave failed: " + slaveIP);
+  }
+}
 void requestInspectionComplete(uint8_t address) {
   Wire.requestFrom(address, 33); // null terminator 포함 33 바이트의 데이터를 요청 (예: 최대 메시지 길이)
   char response[33] = {0}; // 버퍼 초기화

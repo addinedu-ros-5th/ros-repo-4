@@ -52,7 +52,8 @@ class MainWindow(QtWidgets.QMainWindow):
     
     def get_mysql_connection(self):
         try:
-            db_instance = Connect("team4", "0444")
+            # db_instance = Connect("team4", "0444")
+            db_instance = Connect("root", "asdf")
             return db_instance
         except con.Error as err:
             print(f"Error: {err}")
