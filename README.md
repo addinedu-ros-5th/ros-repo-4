@@ -53,4 +53,20 @@ cd ~/final_project/ros-repo-4/scripts
 cd ~/final_project/ros-repo-4/scripts
 ./launch_map.sh
 ```
+#### 내 pc에서 실행 
 
+#### 3. (다른 터미널 열고) PC에 있는 레파지토리에서 경로 생성 코드 실행
+```
+humble
+export ROS_DOMAIN_ID=48
+cd `/final_project/ros-repo-4/MFC_Robot/
+source install/local_setup.bash
+ros2 launch lrobot path_server_launch.py
+```
+
+#### 4. (다른 터미널 열고) [임시] 목표 좌표 발행
+```
+humble
+export ROS_DOMAIN_ID=48
+ros2 topic pub /target_pose minibot_interfaces/GoalPose "{position_x: 1.04, position_y: 1.45, orientation_z: 0.7, orientation_w: 0.7}" --once
+```
