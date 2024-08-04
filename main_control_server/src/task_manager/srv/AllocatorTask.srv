@@ -1,6 +1,10 @@
 string task_code
 string[] product_code_list # ['P02', 'P01', 'P03']
 string task_type
+string[] robot_name
+string[] battery_status
+string[] status
+string[] estimated_completion_time
 ---
 string robot_name  
 string task_code 

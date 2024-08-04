@@ -284,4 +284,3 @@ class MainWindow(QtWidgets.QMainWindow):
             self.robot_state_window = RobotStateWindow(self)
         self.robot_state_window.show()
         self.close()
-

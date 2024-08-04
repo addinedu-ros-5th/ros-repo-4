@@ -1,8 +1,4 @@
-import random
-from collections import Counter
 import numpy as np
-from itertools import permutations
-import time
 
 # 6개의 원을 3행 2열로 배치
 positions = {
@@ -14,92 +10,52 @@ positions = {
     'RF': (1, 3)
 }
 
-# 앞줄 렉 (로봇과 가까운 쪽)
-front_racks = {'RD', 'RE', 'RF'}
+# 물품의 위치
+product_to_location = {
+    "P01": "RA", "P02": "RA", "P03": "RA",
+    "P04": "RB", "P05": "RB", "P06": "RB",
+    "P07": "RC", "P08": "RC", "P09": "RC",
+    "P10": "RD", "P11": "RD", "P12": "RD",
+    "P13": "RE", "P14": "RE", "P15": "RE",
+    "P16": "RF", "P17": "RF", "P18": "RF"
+}
 
-# 원 선택 함수
-def select_nodes():
-    racks = ['RA', 'RB', 'RC', 'RD', 'RE', 'RF']
-    num_items = random.randint(6, 18)
-    items = []
-    while len(items) < num_items:
-        rack = random.choice(racks)
-        if items.count(rack) < 3:
-            items.append(rack)
-    return items
 
-# 거리 행렬 생성 함수
-def create_distance_matrix(nodes, positions):
-    unique_nodes = list(set(nodes))
-    n = len(unique_nodes)
-    dists = np.zeros((n, n))
-    for i, u in enumerate(unique_nodes):
-        for j, v in enumerate(unique_nodes):
-            if i != j:
-                dists[i][j] = np.linalg.norm(np.array(positions[u]) - np.array(positions[v]))
-    return dists, unique_nodes
+# 비용 계산 함수
+def calculate_cost(robot):
+    battery_factor = (100 - robot['battery_level']) / 100
+    workload_factor = robot['total_workload']
+    return battery_factor + workload_factor
 
-# 경로 길이 계산 함수
-def calculate_path_length(path, dists, node_indices):
-    length = 0
-    for i in range(len(path) - 1):
-        length += dists[node_indices[path[i]]][node_indices[path[i + 1]]]
-    length += dists[node_indices[path[-1]]][node_indices[path[0]]]  # 마지막 위치에서 시작 위치로 돌아오는 거리 추가
-    return length
+# 경매 기반 작업 할당 함수
+def auction_based_task_allocation(tasks, robots):
+    task_allocations = []
 
-# 최근접 이웃 알고리즘 함수
-def nearest_neighbor_algorithm(nodes, dists, start_index=0):
-    n = len(nodes)
-    node_indices = {node: i for i, node in enumerate(nodes)}
-    path = [nodes[start_index]]
-    visited = {nodes[start_index]}
-    while len(path) < n:
-        last = path[-1]
-        next_node = min((dists[node_indices[last]][node_indices[node]], node) for node in nodes if node not in visited)[1]
-        path.append(next_node)
-        visited.add(next_node)
-    return path, calculate_path_length(path, dists, node_indices)
+    for task_id, (task_code, task_products) in enumerate(tasks.items()):
+        task_racks = [product_to_location[product] for product in task_products]
+        min_cost = float('inf')
+        selected_robot = None
 
-# 같은 렉을 한 번에 방문하도록 최적화 함수
-def optimize_robot_path(selected_nodes, positions):
-    unique_nodes = list(set(selected_nodes))
-    dists, unique_nodes = create_distance_matrix(unique_nodes, positions)
+        for robot_name, robot in robots.items():
+            if robot['status'] not in ['오류 발생', '유지보수 중']:
+                cost = calculate_cost(robot)
+                if cost < min_cost:
+                    min_cost = cost
+                    selected_robot = robot_name # 제일 값싼 친구가 누구야!!!
 
-    # 시작 인덱스 설정
-    start_index = next((i for i, node in enumerate(unique_nodes) if node in front_racks), 0)
 
-    # 최적 경로 계산 (근사 알고리즘 사용)
-    path, length = nearest_neighbor_algorithm(unique_nodes, dists, start_index)
+        if selected_robot is not None:
+            task_allocations.append({
+                'task_code': task_code,
+                'robot_name': selected_robot,
+                'rack_list': task_racks
+            })
+        else:
+            task_allocations.append({
+                'task_code': task_code,
+                'robot_name': 'None',
+                'rack_list': [],
+                'message': 'No suitable robot found'
+            })
 
-    return path, length
-
-# 메인 함수
-def main():
-    # 랜덤으로 6개에서 18개의 원 선택, 같은 원은 최대 3개까지
-    selected_items = select_nodes()
-    print("Selected Items:", selected_items)
-    print("Item Counts:", Counter(selected_items))
-
-    # 물건을 로봇이 싣을 수 있는 단위로 분리
-    item_counts = Counter(selected_items)
-    batches = []
-    for rack, count in item_counts.items():
-        for _ in range(count // 3):
-            batches.append([rack] * 3)
-        if count % 3:
-            batches.append([rack] * (count % 3))
-
-    total_path = []
-    total_length = 0
-
-    # 각 배치에 대해 최적 경로 계산
-    for batch in batches:
-        path, length = optimize_robot_path(batch, positions)
-        total_path.extend(path)
-        total_length += length
-
-    print(f"Total Path: {total_path}")
-    print(f"Total Path Length: {total_length}")
-
-if __name__ == "__main__":
-    main()
+    return task_allocations
