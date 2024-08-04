@@ -32,6 +32,11 @@ mysql > show tables;
 ***
 ### 로봇 기동 순서 
 #### (로봇에 원격 접속 후)
+```
+cd ~/final_project/ros-repo-4/scripts
+chmod +x launch_robot.sh launch_map.sh robot_drive.sh
+```
+
 #### 0. 로봇 기동
 ```
 cd ~/final_project/ros-repo-4/scripts
