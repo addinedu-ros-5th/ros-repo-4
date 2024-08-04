@@ -3,6 +3,8 @@
 import math
 import time
 import threading
+import yaml
+import mysql.connector as con
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer
@@ -10,12 +12,24 @@ from rclpy.executors import MultiThreadedExecutor
 from robot_state.action import RobotTask
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from data.location_data import pose_dict
+from modules.connect import Connect
 
 # threading에서 Lock 함수 가져오기
 lock = threading.Lock()  
 # 로봇 현재 상태 초기값 세팅
 current_pose = [-10.0, -10.0, 10.0, 10.0]
-
+# 디버깅용 임의 pose_dict                   # ["R_A1", "R_B2", "R_C3"] # new
+pose_dict = {
+    "R_A1": [0.049, -0.789, 0.99, 1.0], "R_A2": [0.049, -0.789, 0.99, 1.0], "R_A3": [0.049, -0.789, 0.99, 1.0],
+    "R_B1": [0.9355, -0.7318, 0.99, 1.0], "R_B2": [0.9355, -0.7318, 0.99, 1.0], "R_B3": [0.9355, -0.7318, 0.99, 1.0],
+    "R_C1": [0.9917, 0.0060, 0.99, 1.0], "R_C2": [0.9917, 0.0060, 0.99, 1.0], "R_C3": [0.9917, 0.0060, 0.99, 1.0],
+    "R_D1": [0.049, -0.789, 0.99, 1.0], "R_D2": [0.049, -0.789, 0.99, 1.0], "R_D3": [0.049, -0.789, 0.99, 1.0],
+    "R_E1": [0.9355, -0.7318, 0.99, 1.0], "R_E2": [0.9355, -0.7318, 0.99, 1.0], "R_E3": [0.9355, -0.7318, 0.99, 1.0],
+    "R_F1": [0.9917, 0.0060, 0.99, 1.0], "R_F2": [0.9917, 0.0060, 0.99, 1.0], "R_F3": [0.9917, 0.0060, 0.99, 1.0],
+    "I1": [0.116, -1.11, 0.0, 1.0], "I2": [0.416, -1.11, 1.0, 0.0],
+    "O1": [0.716, -1.11, 0.0, 1.0], "O2": [0.716, -1.11, 1.0, 0.0],
+}
+    
 class AmclSubscriber(Node):
     def __init__(self):
         super().__init__('amcl_subscriber')
@@ -55,7 +69,7 @@ class RobotTaskServer(Node):
 
     def robot_task_callback(self, goal_handle):
         global current_pose
-        self.get_logger().info('Executing goal...')                                                                                    # 8번 출력 
+        self.get_logger().info('Executing goal...')                                                                         # 8, 15번 출력
 
         self.isClientSent = False                   # new
         self.isTaskComplete = False                 # new
@@ -64,13 +78,16 @@ class RobotTaskServer(Node):
 
         while (self.isClientSent == False):  
             if goal_msg.robot_name != "Debugging":
-                self.get_logger().info(f'Client sent: robot_name={goal_msg.robot_name}, goal_location={goal_msg.goal_location}')        # 9번 출력 
+                self.get_logger().info(f'Client sent: robot_name={goal_msg.robot_name}, goal_location={goal_msg.goal_location}') # 9, 16번 출력 
                 self.isClientSent = True
                 break
+            
+            self.get_logger().info(f'{goal_msg.robot_name}')
+            self.get_logger().info("===============================")
 
         while(1):
             if self.cnt == 60 or current_pose[0] != -10.0:
-                self.get_logger().info(f'Current_pose: pos_x = {current_pose[0]}, pos_y = {current_pose[1]}')                           # 10번 출력 
+                self.get_logger().info(f'Current_pose: pos_x = {current_pose[0]}, pos_y = {current_pose[1]}')                  # 10, 17번 출력 
                 break
             self.cnt += 1
             time.sleep(1)
@@ -81,20 +98,21 @@ class RobotTaskServer(Node):
             # remaining_distance에 대한 계산
             ## =======================================================
             feedback_msg.remaining_distance = self.calculate_distance(target_pose)
-            self.get_logger().info(f'Feedback: {feedback_msg.remaining_distance}')                                                     # 11번 출력 
+            self.get_logger().info(f'Feedback: {feedback_msg.remaining_distance}')                                              # 11, 18번 출력 
             self.get_logger().info('--------------111111111------------------')
             goal_handle.publish_feedback(feedback_msg)
         
             ## 목표 지점 근처에 도달했을 때 ADJUSTING 상태로 전환
-            if feedback_msg.remaining_distance < 0.45:
-                self.get_logger().info(f'ADJUSTING MODE')                                                                               # 12번 출력
+            if feedback_msg.remaining_distance < 0.95:      # 0.45
+                self.get_logger().info(f'ADJUSTING MODE')                                                                       # 12, 19번 출력
                 ### ADJUSTING 상태 관련 코드 
                 #### ------------------------------------- 
                 #### ...
                 #### -------------------------------------
 
                 ### TaskComplete 업데이트
-                self.isTaskComplete = True                    
+                self.isTaskComplete = True
+                                 
             ## 목표 지점 도달X MOVING 상태 유지
             else:
                 self.get_logger().info(f'MOVING MODE')
@@ -106,13 +124,14 @@ class RobotTaskServer(Node):
         goal_handle.succeed()
         result = RobotTask.Result()
         result.task_complete = True
+
         return result
             
     def calculate_distance(self, target_pose):
         global current_pose
 
-        dx = current_pose[0] - 0.75 #target_pose[0] # 0.75 
-        dy = current_pose[1] - 0.2  #target_pose[1] # 0.2  
+        dx = current_pose[0] - target_pose[0] # 0.75 
+        dy = current_pose[1] - target_pose[1] # 0.2  
         
         return math.sqrt(dx * dx + dy * dy)
     

@@ -30,13 +30,11 @@ class SensorSender(Node):
             '/scan',  # 라이다 토픽 이름을 적절히 변경하세요
             self.lidar_callback,
             qos_profile
-        )
+            )
         
         self.bridge = CvBridge()
         self.image_buffer = []
         self.lidar_buffer = []
-        
-        self.robot_id = 'robot_1'  # 로봇 ID를 여기에 설정
         
         # PC 서버 설정 (PC의 IP 주소를 사용)
         self.pc_ip = '192.168.2.17'  # 예: PC의 IP 주소
@@ -105,12 +103,7 @@ class SensorSender(Node):
         lidar_json = json.dumps(lidar_data).encode('utf-8')
         image_length = len(image_data)
         lidar_length = len(lidar_json)
-        
-        # 로봇 ID를 바이트로 변환
-        robot_id_bytes = self.robot_id.encode('utf-8')
-        robot_id_length = len(robot_id_bytes)
-
-        total_length = 12 + image_length + lidar_length + robot_id_length  # 총 길이: 기존의 8바이트 + 로봇 ID 길이 4바이트 추가
+        total_length = 8 + image_length + lidar_length
 
         print(f"Sending total data of length: {total_length}")
 
@@ -129,12 +122,6 @@ class SensorSender(Node):
 
             # 라이다 데이터 전송
             self.client_socket.sendall(lidar_json)
-
-            # 로봇 ID 길이 전송
-            self.client_socket.sendall(robot_id_length.to_bytes(4, 'big'))
-
-            # 로봇 ID 전송
-            self.client_socket.sendall(robot_id_bytes)
 
             print("Data sent")
         except socket.error as e:

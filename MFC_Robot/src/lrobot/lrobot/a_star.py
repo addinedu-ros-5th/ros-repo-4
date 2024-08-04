@@ -1,9 +1,8 @@
 import math
 import numpy as np
-
 import os
 import yaml
-from ament_index_python.packages import get_package_share_directory
+# import matplotlib.pyplot as plt
 
 class AStarPlanner:
 
@@ -16,7 +15,6 @@ class AStarPlanner:
         resolution: grid resolution [m]
         rr: robot radius[m]
         """
-
         self.resolution = resolution
         self.rr = rr
         self.padding = padding
@@ -26,27 +24,20 @@ class AStarPlanner:
         self.x_width, self.y_width = 0, 0
         self.motion = self.get_motion_model()
 
-        # custom parameters
-        self.resolution = 1
-        self.map_resolution = 1
-        self.map_origin = (-0.461, -1.85)
-        
         ox, oy = self.load_map()
-
         self.calc_obstacle_map(ox, oy)
 
         print("Map loading done!")
 
     def load_map(self):
         print("Loading map start!")
-        map_yaml_file = os.path.join(get_package_share_directory('lrobot'), 'maps', 'mfl.yaml')
+        map_yaml_file = '/home/ys/5-ros-repo-4/lrobot/src/lrobot/maps/mfc_map.yaml'
         map_yaml_data = yaml.full_load(open(map_yaml_file))
 
         self.map_resolution = map_yaml_data['resolution']    # m / pixel
-        self.map_origin = map_yaml_data['origin']    # list
+        self.map_origin = map_yaml_data['origin'][:2]    # list
         
-
-        map_pgm_file = os.path.join(get_package_share_directory('lrobot'), 'maps', map_yaml_data['image'])
+        map_pgm_file = '/home/ys/5-ros-repo-4/lrobot/src/lrobot/maps/mfc_map.pgm'
 
         with open(map_pgm_file, 'rb') as pgmf:
             pgm_data = pgmf.readlines()
@@ -55,7 +46,6 @@ class AStarPlanner:
             map_data[map_data <= 210] = 0
             map_data[map_data > 210] = 100
             map_data = map_data.reshape((map_height, map_width))
-            # map_data = np.rot90(map_data, 3)
             map_data = np.flip(map_data, axis=0)    # 이상하게 불러온 맵이 플립되어있음
 
         # set obstacle positions
@@ -76,7 +66,7 @@ class AStarPlanner:
         return ox, oy
 
     class Node:
-        def __init__(self, x, y, cost, parent_index, vector = None):
+        def __init__(self, x, y, cost, parent_index, vector=None):
             self.x = x  # index of grid
             self.y = y  # index of grid
             self.cost = cost
@@ -128,7 +118,6 @@ class AStarPlanner:
 
             c_id = min(
                 open_set,
-                # key=lambda o: open_set[o].cost + self.calc_heuristic(goal_node, open_set[o]))
                 key=lambda o: open_set[o].cost + self.calc_manhattan(goal_node, open_set[o]))
             current = open_set[c_id]
 
@@ -244,9 +233,6 @@ class AStarPlanner:
         pos = index * self.resolution + min_position
         return pos
 
-    # def calc_xy_index(self, position, min_pos):
-    #     return round((position - min_pos) / self.resolution)
-
     def calc_grid_index(self, node):
         return (node.y - self.min_y) * self.x_width + (node.x - self.min_x)
 
@@ -264,26 +250,6 @@ class AStarPlanner:
             return False
 
         return True
-
-    # def verify_node(self, node):
-    #     px = self.calc_grid_position(node.x, self.min_x)
-    #     py = self.calc_grid_position(node.y, self.min_y)
-
-    #     if px < self.min_x:
-    #         return False
-    #     elif py < self.min_y:
-    #         return False
-    #     elif px >= self.max_x:
-    #         return False
-    #     elif py >= self.max_y:
-    #         return False
-
-
-    #     # collision check
-    #     if self.obstacle_map[node.x][node.y]:
-    #         return False
-
-    #     return True
 
     def calc_obstacle_map(self, ox, oy):
         print("Calc Obstacle...")
@@ -323,31 +289,41 @@ class AStarPlanner:
             [0, 1, 1],
             [-1, 0, 1],
             [0, -1, 1],
-            # [-1, -1, math.sqrt(2)],
-            # [-1, 1, math.sqrt(2)],
-            # [1, -1, math.sqrt(2)],
-            # [1, 1, math.sqrt(2)]
         ]
-
         return motion
 
+# def visualize_map_and_path(a_star, tpx, tpy, sx, sy, gx, gy):
+#     ox, oy = a_star.load_map()
+    
+#     # Convert grid positions to map positions for visualization
+#     ox = [x * a_star.map_resolution + a_star.map_origin[0] for x in ox]
+#     oy = [y * a_star.map_resolution + a_star.map_origin[1] for y in oy]
+    
+#     fig, ax = plt.subplots()
+#     ax.plot(ox, oy, ".k", markersize=2)
+#     ax.plot(tpx, tpy, "or", label='Waypoints')
+#     ax.plot(sx, sy, "og", label='Start')
+#     ax.plot(gx, gy, "ob", label='Goal')
+#     if len(tpx) > 1:
+#         ax.plot(tpx, tpy, "-r", label='Path')  # 경로를 이어주는 선을 추가
+#     ax.set_aspect('equal')
+#     # ax.legend()
+#     plt.show()
 
 # def main():
 #     print(__file__ + " start!!")
 
-#     a_star = AStarPlanner(1, 0.2, 3)
+#     grid_size = 1  # [m]
+#     robot_radius = 0.3  # [m]
+#     padding = 1
+
+#     a_star = AStarPlanner(grid_size, robot_radius, padding)
     
 #     # start and goal position
 #     sx = 0  # [m]
 #     sy = 0  # [m]
-#     gx = 0.716  # [m]
-#     gy = -1.11  # [m]
-#     grid_size = 0.3  # [m]
-#     robot_radius = 0.2  # [m]
-#     padding = 3
-
-
-#     a_star = AStarPlanner(grid_size, robot_radius, padding)
+#     gx = 0.85  # [m]
+#     gy = -0.84  # [m]
 
 #     rx, ry, tpx, tpy, tvec_x, tvec_y = a_star.planning(sx, sy, gx, gy)
 
@@ -356,196 +332,7 @@ class AStarPlanner:
 #     else:
 #         print("No path found")
 
+#     visualize_map_and_path(a_star, tpx, tpy, sx, sy, gx, gy)
 
 # if __name__ == '__main__':
 #     main()
-
-
-# import numpy as np
-# import heapq
-# import yaml
-# from PIL import Image
-# import os
-
-# class AStar:
-#     def __init__(self, map_pgm, map_yaml):
-#         self.map_pgm = map_pgm
-#         self.map_yaml = map_yaml
-#         self.map = None
-
-#     def load_map(self):
-#         if not os.path.exists(self.map_pgm) or not os.path.exists(self.map_yaml):
-#             print(f"Map files not found: {self.map_pgm}, {self.map_yaml}")
-#             return
-
-#         with open(self.map_yaml, 'r') as yaml_file:
-#             yaml_data = yaml.safe_load(yaml_file)
-
-#         resolution = yaml_data['resolution']
-#         origin = yaml_data['origin']
-
-#         pgm_image = Image.open(self.map_pgm)
-#         map_array = np.array(pgm_image)
-        
-#         map_array[map_array > 0] = 1  # 1 represents free space
-#         map_array[map_array == 0] = 0  # 0 represents obstacles
-
-#         self.map = map_array
-#         print("Map loaded successfully")
-
-#     def heuristic(self, start, goal):
-#         return abs(start[0] - goal[0]) + abs(start[1] - goal[1])
-
-#     def astar(self, start, goal):
-#         if self.map is None:
-#             print("Map not loaded.")
-#             return []
-
-#         start = (int(start[0]), int(start[1]))
-#         goal = (int(goal[0]), int(goal[1]))
-
-#         if not self.is_valid(start):
-#             print(f"Start position {start} is invalid")
-#             return []
-
-#         if not self.is_valid(goal):
-#             print(f"Goal position {goal} is invalid")
-#             return []
-        
-#         open_list = []
-#         heapq.heappush(open_list, (0, start))
-#         came_from = {}
-#         g_score = {start: 0}
-#         f_score = {start: self.heuristic(start, goal)}
-
-#         while open_list:
-#             _, current = heapq.heappop(open_list)
-
-#             if current == goal:
-#                 path = self.reconstruct_path(came_from, current)
-#                 print(f"Path found: {path}")
-#                 return path
-
-#             neighbors = self.get_neighbors(current)
-#             for neighbor in neighbors:
-#                 tentative_g_score = g_score[current] + 1
-
-#                 if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
-#                     came_from[neighbor] = current
-#                     g_score[neighbor] = tentative_g_score
-#                     f_score[neighbor] = tentative_g_score + self.heuristic(neighbor, goal)
-#                     if neighbor not in [i[1] for i in open_list]:
-#                         heapq.heappush(open_list, (f_score[neighbor], neighbor))
-
-#         print("No path found")
-#         return []
-
-#     def is_valid(self, node):
-#         return 0 <= node[0] < self.map.shape[0] and 0 <= node[1] < self.map.shape[1] and self.map[node[0], node[1]] == 1
-
-#     def get_neighbors(self, node):
-#         directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
-#         neighbors = []
-#         for direction in directions:
-#             neighbor = (node[0] + direction[0], node[1] + direction[1])
-#             if self.is_valid(neighbor):
-#                 neighbors.append(neighbor)
-#         return neighbors
-
-#     def reconstruct_path(self, came_from, current):
-#         path = [current]
-#         while current in came_from:
-#             current = came_from[current]
-#             path.append(current)
-#         path.reverse()
-#         return path
-
-
-# import numpy as np
-# import heapq
-# import yaml
-# from PIL import Image
-
-# class AStar:
-#     def __init__(self, map_pgm, map_yaml):
-#         self.map = self.load_map(map_pgm, map_yaml)
-
-#     def load_map(self, map_pgm, map_yaml):
-#         with open(map_yaml, 'r') as yaml_file:
-#             yaml_data = yaml.safe_load(yaml_file)
-
-#         resolution = yaml_data['resolution']
-#         origin = yaml_data['origin']
-
-#         pgm_image = Image.open(map_pgm)
-#         map_array = np.array(pgm_image)
-        
-#         map_array[map_array > 0] = 1  # 1 represents free space
-#         map_array[map_array == 0] = 0  # 0 represents obstacles
-
-#         return map_array
-
-#     def heuristic(self, start, goal):
-#         return abs(start[0] - goal[0]) + abs(start[1] - goal[1])
-
-#     def astar(self, start, goal):
-#         start = (int(start[0]), int(start[1]))
-#         goal = (int(goal[0]), int(goal[1]))
-        
-#         open_list = []
-#         heapq.heappush(open_list, (0, start))
-#         came_from = {}
-#         g_score = {start: 0}
-#         f_score = {start: self.heuristic(start, goal)}
-
-#         while open_list:
-#             _, current = heapq.heappop(open_list)
-
-#             if current == goal:
-#                 return self.reconstruct_path(came_from, current)
-
-#             neighbors = self.get_neighbors(current)
-#             for neighbor in neighbors:
-#                 tentative_g_score = g_score[current] + 1
-
-#                 if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
-#                     came_from[neighbor] = current
-#                     g_score[neighbor] = tentative_g_score
-#                     f_score[neighbor] = tentative_g_score + self.heuristic(neighbor, goal)
-#                     if neighbor not in [i[1] for i in open_list]:
-#                         heapq.heappush(open_list, (f_score[neighbor], neighbor))
-
-#         return []
-
-#     def get_neighbors(self, node):
-#         directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
-#         neighbors = []
-#         for direction in directions:
-#             neighbor = (node[0] + direction[0], node[1] + direction[1])
-#             if 0 <= neighbor[0] < self.map.shape[0] and 0 <= neighbor[1] < self.map.shape[1]:
-#                 if self.map[neighbor[0], neighbor[1]] == 1:
-#                     neighbors.append(neighbor)
-#         return neighbors
-
-#     def reconstruct_path(self, came_from, current):
-#         path = [current]
-#         while current in came_from:
-#             current = came_from[current]
-#             path.append(current)
-#         path.reverse()
-#         return path
-
-# # def main(args=None):
-# #     import sys
-# #     if len(sys.argv) < 3:
-# #         print("Usage: astar.py <map.pgm> <map.yaml>")
-# #         return
-
-# #     map_pgm = sys.argv[1]
-# #     map_yaml = sys.argv[2]
-
-# #     astar = AStar(map_pgm, map_yaml)
-# #     print("AStar initialized with map:", map_pgm, "and", map_yaml)
-
-# # if __name__ == "__main__":
-# #     main()

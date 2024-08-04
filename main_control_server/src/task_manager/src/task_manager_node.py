@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-
+import yaml
 import rclpy
 from rclpy.node import Node
-
-
+import os
 from task_manager.msg import DbUpdate, GuiUpdate
 from task_manager.msg import StartInspection, InspectionComplete, SendAllocationResults
 from task_manager.srv import GenerateOrder, AllocatorTask
@@ -11,7 +10,6 @@ from modules.order_grouping import group_items
 from modules.order_list import OrderList  
 from robot_state.srv import UpdateDB
 from robot_state.msg import TaskProgressUpdate
-
 
 import mysql.connector as con
 
@@ -51,6 +49,7 @@ class OrderListService(Node):
             'inspection_complete',
             self.inspection_complete_callback,
             10)
+        
         # 'TaskProgressUpdate' 메세지 타입의 subscriber
         self.subscription_task_progress_update = self.create_subscription(                  # new
             TaskProgressUpdate,
@@ -58,7 +57,7 @@ class OrderListService(Node):
             self.task_progress_callback,
             10
             )
-        
+        self.subscription_task_progress_update                                              # new
 
         # 'GuiUpdate' 메세지 타입의 publisher
         self.publisher_update_gui = self.create_publisher(GuiUpdate, 'gui_update', 10)        
@@ -98,6 +97,7 @@ class OrderListService(Node):
         self.get_logger().info(f'Current Rack: {msg.current_rack}')                                                   
         self.get_logger().info(f'Task Complete: {msg.task_complete}')
         self.get_logger().info(f'****************************************************')
+        ########################## 여기서 estimated_completion_time 업데이트? ##########################
 
     def callback_response(self, future):
         try:
@@ -168,8 +168,6 @@ class OrderListService(Node):
         # self.get_logger().info(f'Sending response: {response}')
    
         return response
-
-
 
     def db_update_callback(self, msg):
         self.get_logger().info(f'Received DB update status: {msg.status}')
@@ -343,6 +341,29 @@ class Connect():
             self.cursor.close()
             self.conn = None
 
+# YAML 파일 경로
+# yaml_file_path = '/home/edu/dev_ws/git_ws2/ros-repo-4/main_control_server/params/db_user_info.yaml'
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+db_user_info_path = os.path.join(current_dir, "../../../../params/db_user_info.yaml")
+yaml_file_path = os.path.abspath(db_user_info_path)
+
+
+# YAML 파일을 읽어 파라미터를 가져옴
+def load_db_params(file_path):
+    with open(file_path, 'r') as file:
+        params = yaml.safe_load(file)
+    return params['local_db']['id'], params['local_db']['pw']
+
+def get_mysql_connection():
+    try:
+        db_id, db_pw = load_db_params(yaml_file_path)
+        db_instance = Connect(db_id, db_pw)
+        return db_instance
+    except con.Error as err:
+        print(f"Error: {err}")
+        return None    
+    
 def main(args=None):
     rclpy.init(args=args)
     order_list_service = OrderListService()
