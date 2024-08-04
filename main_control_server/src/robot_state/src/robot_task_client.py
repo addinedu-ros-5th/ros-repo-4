@@ -20,11 +20,7 @@ from std_msgs.msg import String
 from robot_state.msg import TaskProgressUpdate
 
 # YAML 파일 경로
-# yaml_file_path = '/home/edu/dev_ws/git_ws2/ros-repo-4/main_control_server/params/db_user_info.yaml'
-
-current_dir = os.path.dirname(os.path.abspath(__file__))
-db_user_info_path = os.path.join(current_dir, "../../../../params/db_user_info.yaml")
-yaml_file_path = os.path.abspath(db_user_info_path)
+yaml_file_path = '/home/edu/dev_ws/git_ws2/ros-repo-4/main_control_server/params/db_user_info.yaml'
 
 # YAML 파일을 읽어 파라미터를 가져옴
 def load_db_params(file_path):
@@ -40,10 +36,11 @@ def get_mysql_connection():
     except con.Error as err:
         print(f"Error: {err}")
         return None    
-    
+
 class UpdateRobotState():
     def __init__(self, db_instance):
         self.cursor = db_instance.cursor
+        self.conn = db_instance.conn
 
     # 데이터베이스에서 테이블 정보를 가져오는 함수 정의
     def fetchDataQuery(self, query):
@@ -114,29 +111,42 @@ class RobotTaskClient(Node):
         result = future.result().result
         if result.task_complete == True:
             self.get_logger().info(f"Result task_complete(T/F): {result.task_complete}")                                # 14번 출력 
-            ### Result task_complete(T/F): {result.task_complete}  --->  Executing goal... -> Goal accepted: ) ###   
             #---------------------------------- 여기서 다음 goal_location  보내야 함 ----------------------------------#       
             self.is_current_one_done[self.num] = True
-            ####################### 여기서 task_manager한테 현재 goal_location에 대해 LED 키라고 보내야 함 #########################
+            ####################### 여기서 task_manager한테 현재 goal_location에 대해 LED 키라고 보내야 함 ##############
             self.send_task_complete_results()
-            ####################### 여기서 DB상의 'Estimated_Completion_Time'열 데이터 1 차감 #########################
-            # self.update_estimated_completion_time()
+            ####################### 여기서 DB상의 'Estimated_Completion_Time'열 데이터 1 차감 ########################
+            self.update_estimated_completion_time()                     # new 0801
 
             if False in self.is_current_one_done:
                 #### send new goal_location ### 
                 self.num += 1
-                time.sleep(1)
-                #self.robot_name = "Debugging"
+                # time.sleep(1)
+                # self.robot_name = "Debugging"
                 self.send_goal()
             #------------------------------------------------------------------------------------------------------#
             else:
                 self.publish_result("All done")
 
-    # def update_estimated_completion_time(self):
-    #     query = """
-                
-    #             """
-    #     self.update_robot_state.updateData(query)
+        ## elif result.task_complete == False:
+        ##    self.check_robot_state()
+
+    # def check_robot_state(self):
+        ## 배터리 상태 체크 -> 20% 이하면 -> self.publish_result("LOW Battery") -> elif (msg.data == "LOW Battery") -> 
+
+    def update_estimated_completion_time(self):                         # new 0801                  
+        self.get_logger().info(f"@@@@@@@@@@@@@@@@UPDATE ESTIMATED_COMPLETION_TIME@@@@@@@@@@@@@@@@")         
+        self.get_logger().info(f"Robot Name: {self.robot_name}, Rack List: {self.rack_list}")
+        
+        query = f"""
+                UPDATE Robot_manager
+                SET Estimated_Completion_Time = Estimated_Completion_Time - 1,
+                    Battery_Status = CONCAT(CAST(CAST(SUBSTRING(Battery_Status, 1, LENGTH(Battery_Status) - 1) AS DECIMAL(5, 2)) - 20 AS CHAR), '%')
+                WHERE Robot_Name = {self.robot_name} 
+                    AND Rack_List = {self.rack_list} 
+                    AND Error_Codes = 'None';
+                """
+        self.update_robot_state.updateData(query)
 
     def send_task_complete_results(self):
         taskprogress = TaskProgressUpdate()
