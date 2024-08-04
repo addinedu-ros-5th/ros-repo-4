@@ -138,12 +138,14 @@ class RobotTaskClient(Node):
         self.get_logger().info(f"@@@@@@@@@@@@@@@@UPDATE ESTIMATED_COMPLETION_TIME@@@@@@@@@@@@@@@@")         
         self.get_logger().info(f"Robot Name: {self.robot_name}, Rack List: {self.rack_list}")
         
+        rack_list_str = str(self.rack_list).replace('[', '').replace(']', '').replace("'", "")  # Format Rack_List correctly
+        self.get_logger().info(f"Rack List Str: {rack_list_str}")
         query = f"""
                 UPDATE Robot_manager
                 SET Estimated_Completion_Time = Estimated_Completion_Time - 1,
                     Battery_Status = CONCAT(CAST(CAST(SUBSTRING(Battery_Status, 1, LENGTH(Battery_Status) - 1) AS DECIMAL(5, 2)) - 20 AS CHAR), '%')
-                WHERE Robot_Name = {self.robot_name} 
-                    AND Rack_List = {self.rack_list} 
+                WHERE Robot_Name = '{self.robot_name}'
+                    AND Rack_List = '{rack_list_str}' 
                     AND Error_Codes = 'None';
                 """
         self.update_robot_state.updateData(query)
