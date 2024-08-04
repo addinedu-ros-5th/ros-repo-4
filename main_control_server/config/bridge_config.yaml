@@ -1,71 +1,71 @@
 name: domain_bridge
 
 topics:
-  /camera/image_raw:
-    type: sensor_msgs/msg/Image
-    from_domain: 40
-    to_domain: 88
-    remap: camera/image_raw_1
-  /camera/image_raw:
-    type: sensor_msgs/msg/Image
-    from_domain: 48
-    to_domain: 88
-    remap: camera/image_raw_2
+  # /camera/image_raw:
+  #   type: sensor_msgs/msg/Image
+  #   from_domain: 40
+  #   to_domain: 88
+  #   remap: camera/image_raw_1
+  # /camera/image_raw:
+  #   type: sensor_msgs/msg/Image
+  #   from_domain: 48
+  #   to_domain: 88
+  #   remap: camera/image_raw_2
 
-  scan:
-    type: sensor_msgs/msg/LaserScan
-    from_domain: 40
-    to_domain: 48
-    remap: scan_1
-  scan:
-    type: sensor_msgs/msg/LaserScan
-    from_domain: 88
-    to_domain: 48
-    remap: scan_2
+  # scan:
+  #   type: sensor_msgs/msg/LaserScan
+  #   from_domain: 40
+  #   to_domain: 48
+  #   remap: scan_1
+  # scan:
+  #   type: sensor_msgs/msg/LaserScan
+  #   from_domain: 88
+  #   to_domain: 48
+  #   remap: scan_2
 
   /amcl_pose:
     type: geometry_msgs/msg/PoseWithCovarianceStamped
     from_domain: 40
     to_domain: 88
-    remap: amcl_pose_1
+    remap: robo_1/amcl_pose
   /amcl_pose:
     type: geometry_msgs/msg/PoseWithCovarianceStamped
     from_domain: 48
     to_domain: 88
-    remap: amcl_pose_2
+    remap: robo_2/amcl_pose
 
-  detection_result:
-    type: std_msgs/msg/String
-    from_domain: 88
-    to_domain: 40
-    remap: detection_result_1
-  detection_result:
-    type: std_msgs/msg/String
-    from_domain: 88
-    to_domain: 48
-    remap: detection_result_2
+  # detection_result:
+  #   type: std_msgs/msg/String
+  #   from_domain: 88
+  #   to_domain: 40
+  #   remap: detection_result_1
+  # detection_result:
+  #   type: std_msgs/msg/String
+  #   from_domain: 88
+  #   to_domain: 48
+  #   remap: detection_result_2
 
   /result_topic_1:
     type: std_msgs/msg/String
     from_domain: 88
     to_domain: 40
-    remap: /result_topic_1
+    remap: robo_1/result_topic
   /result_topic_2:
     type: std_msgs/msg/String
     from_domain: 88
     to_domain: 48
-    remap: /result_topic_2
+    remap: robo_2/result_topic
 
   arrive_topic_1:
     type: std_msgs/msg/String
     from_domain: 40
     to_domain: 88
-    remap: arrive_topic_1
+    remap: robo_1/arrive_topic
   arrive_topic_2:
     type: std_msgs/msg/String
     from_domain: 48
     to_domain: 88
-    remap: arrive_topic_2
+    remap: robo_2/arrive_topic
 
   goal_pose_1:
     type: geometry_msgs/msg/PoseStamped
@@ -87,35 +87,35 @@ topics:
   #   from_domain: 88
   #   to_domain: 48
 
-  odom:
-    type: nav_msgs/msg/Odometry
-    from_domain: 40
-    to_domain: 48
-    remap: odom_robot_1
-  odom:
-    type: nav_msgs/msg/Odometry
-    from_domain: 88
-    to_domain: 48
-    remap: odom_robot_2
+  # odom:
+  #   type: nav_msgs/msg/Odometry
+  #   from_domain: 40
+  #   to_domain: 48
+  #   remap: odom_robot_1
+  # odom:
+  #   type: nav_msgs/msg/Odometry
+  #   from_domain: 88
+  #   to_domain: 48
+  #   remap: odom_robot_2
 
-  base_controller/cmd_vel_unstamped_1:
-    type: geometry_msgs/msg/Twist
-    from_domain: 88
-    to_domain: 40
-    remap: base_controller/cmd_vel_unstamped
-  base_controller/cmd_vel_unstamped_2:
-    type: geometry_msgs/msg/Twist
-    from_domain: 48
-    to_domain: 88
-    remap: base_controller/cmd_vel_unstamped
+  # base_controller/cmd_vel_unstamped_1:
+  #   type: geometry_msgs/msg/Twist
+  #   from_domain: 88
+  #   to_domain: 40
+  #   remap: base_controller/cmd_vel_unstamped
+  # base_controller/cmd_vel_unstamped_2:
+  #   type: geometry_msgs/msg/Twist
+  #   from_domain: 48
+  #   to_domain: 88
+  #   remap: base_controller/cmd_vel_unstamped
 
   planned_path:
       type: 'nav_msgs/msg/Path'
       from_domain: 48
       to_domain: 40
-      remap: planned_path_1
+      remap: robo_1/planned_path
   planned_path:
       type: 'nav_msgs/msg/Path'
       from_domain: 48
       to_domain: 88
-      remap: planned_path_2
+      remap: robo_2/planned_path

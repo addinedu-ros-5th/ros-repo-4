@@ -10,13 +10,13 @@ class DetectionServer(Node):
         self.publisher_ = self.create_publisher(String, 'robot_command_topic', 10)
         self.subscription = self.create_subscription(
             String,
-            'detection_topic',
+            'result_topic_robo_1',
             self.listener_callback,
             10
         )
         self.velocity_subscription = self.create_subscription(
             Twist,
-            'cmd_vel',
+            'base_controller/cmd_vel_unstamped',
             self.velocity_callback,
             10
         )
