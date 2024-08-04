@@ -27,3 +27,25 @@ mysql > use DFC_system_db;
 mysql > SOURCE 'DFC_system_db.sql 위치한 절대 경로';
 mysql > show tables;
 ```
+
+
+***
+### 로봇 기동 순서 
+#### (로봇에 원격 접속 후)
+#### 0. 로봇 기동
+```
+cd ~/final_project/ros-repo-4/scripts
+./launch_robot.sh
+```
+#### 1. (다른 터미널 열고) robot_drive 노드 실행
+```
+cd ~/final_project/ros-repo-4/scripts
+./robot_drive.sh
+```
+
+#### 2. (다른 터미널 열고) nav2 맵 실행
+```
+cd ~/final_project/ros-repo-4/scripts
+./launch_map.sh
+```
+
