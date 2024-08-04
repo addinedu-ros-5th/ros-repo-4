@@ -173,7 +173,7 @@ class MFCRobotManager(Node):
                     {float(estimated_completion_time)},
                     IFNULL((SELECT Battery_Status FROM Robot_manager ORDER BY Num DESC LIMIT 1), '100%'),
                     '{Task_Assignment}',
-                    NULL,
+                    "None",
                     NOW()
                 FROM
                     Robot_manager;
