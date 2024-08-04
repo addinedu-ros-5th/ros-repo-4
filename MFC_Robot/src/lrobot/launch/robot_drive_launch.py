@@ -12,7 +12,8 @@ def generate_launch_description():
             name='robot_drive',
             output='screen',
             parameters=[{
-                'use_sim_time': False 
+                'use_sim_time': False,
+                'queue_size': 100 
             }]
         )
     ])

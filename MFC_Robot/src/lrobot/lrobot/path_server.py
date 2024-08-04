@@ -1,4 +1,5 @@
 import rclpy
+# import queue
 from rclpy.node import Node
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from nav_msgs.msg import Path # Odometry
@@ -15,20 +16,15 @@ class PathServer(Node):
         self.current_pose = None
         self.goal_pose = None
         
-        self.goal_subscription = self.create_subscription(
-            GoalPose,
-            'target_pose',
-            self.goal_callback,
-            10)
-        self.pose_subscription = self.create_subscription(
-            PoseWithCovarianceStamped,
-            '/amcl_pose',
-            self.pose_callback,
-            10)
-        self.path_publisher = self.create_publisher(Path, 'planned_path', 10)
+        self.goal_subscription = self.create_subscription(GoalPose, 'target_pose', self.goal_callback, 10)
+        self.pose_subscription = self.create_subscription(PoseWithCovarianceStamped, '/amcl_pose', self.pose_callback, 10)
+        self.path_publisher_1 = self.create_publisher(Path, 'planned_path_1', 10)
+        # self.path_publisher_2 = self.create_publisher(Path, 'planned_path_2', 10)
+
+        # self.queue = queue.Queue()
+        # self.processing = False
 
         self.astar = AStarPlanner(1, 0.2, 1)  # grid_size, robot_radius, padding을 설정
-        
         
     def pose_callback(self, msg):
         # robot_id = 1
@@ -45,8 +41,11 @@ class PathServer(Node):
             msg.orientation_z,
             msg.orientation_w)
         self.get_logger().info(f'New goal pose: {self.goal_pose}')
-        if self.current_pose:
-            self.calculate_path()
+        # self.queue.put(msg)
+        # if not self.processing:
+        #     self.process_next_location()
+        #     if self.current_pose:
+        #         self.calculate_path()
 
     def calculate_path(self):
         self.get_logger().info(f'Calculating path from {self.current_pose} to {(self.goal_pose[0], self.goal_pose[1])}')
@@ -79,7 +78,8 @@ class PathServer(Node):
                 pose.pose.orientation.w = self.goal_pose[3]
                 path_msg.poses.append(pose)
             
-            self.path_publisher.publish(path_msg)
+            self.path_publisher_1.publish(path_msg)
+            # self.path_publisher_2.publish(path_msg)
             self.get_logger().info('Publishing computed path')
             self.get_logger().info(f'-----------------------Waypoints: {list(zip(tpx, tpy))}')
         else:

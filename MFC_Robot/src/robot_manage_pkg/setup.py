@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'recieve_result_state = robot_manage_pkg.recieve_result_state:main',
+            'tf_test = robot_manage_pkg.tf_test:main',
         ],
     },
 )
