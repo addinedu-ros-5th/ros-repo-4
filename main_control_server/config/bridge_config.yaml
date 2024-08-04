@@ -1,81 +1,121 @@
-# Name of the domain bridge, used for node naming and logging
-# server: 48
-# robot_1_ID: 40
-# robot_2_ID: 88
 name: domain_bridge
 
 topics:
-  amcl_pose:
-    type: geometry_msgs/msg/PoseWithCovarianceStamped
-    from_domain: 40
-    to_domain: 48
-    remap: amcl_pose_robot_1
-  amcl_pose:
-    type: geometry_msgs/msg/PoseWithCovarianceStamped
-    from_domain: 88
-    to_domain: 48
-    remap: amcl_pose_robot_2
-
-    # 로봇 1 (도메인 40)의 image_raw 토픽을 구독하고 리매핑합니다.
-  image_raw:
+  /camera/image_raw:
     type: sensor_msgs/msg/Image
     from_domain: 40
-    to_domain: 48
-    remap: image_raw_robot_1
-
-  # 로봇 2 (도메인 88)의 image_raw 토픽을 구독하고 리매핑합니다.
-  image_raw:
+    to_domain: 88
+    remap: camera/image_raw_1
+  /camera/image_raw:
     type: sensor_msgs/msg/Image
-    from_domain: 88
-    to_domain: 48
-    remap: image_raw_robot_2
+    from_domain: 48
+    to_domain: 88
+    remap: camera/image_raw_2
 
-
-   # 로봇 1 (도메인 40)의 scan 토픽을 구독하고 리매핑합니다.
   scan:
     type: sensor_msgs/msg/LaserScan
     from_domain: 40
     to_domain: 48
-    remap: scan_robot_1
-
-  # 로봇 2 (도메인 88)의 scan 토픽을 구독하고 리매핑합니다.
+    remap: scan_1
   scan:
     type: sensor_msgs/msg/LaserScan
     from_domain: 88
     to_domain: 48
-    remap: scan_robot_2
+    remap: scan_2
 
+  /amcl_pose:
+    type: geometry_msgs/msg/PoseWithCovarianceStamped
+    from_domain: 40
+    to_domain: 88
+    remap: amcl_pose_1
+  /amcl_pose:
+    type: geometry_msgs/msg/PoseWithCovarianceStamped
+    from_domain: 48
+    to_domain: 88
+    remap: amcl_pose_2
 
-  # allocate_task_40:
-  #   type: task_msgs/srv/AllocateTask
+  detection_result:
+    type: std_msgs/msg/String
+    from_domain: 88
+    to_domain: 40
+    remap: detection_result_1
+  detection_result:
+    type: std_msgs/msg/String
+    from_domain: 88
+    to_domain: 48
+    remap: detection_result_2
+
+  /result_topic_1:
+    type: std_msgs/msg/String
+    from_domain: 88
+    to_domain: 40
+    remap: /result_topic_1
+  /result_topic_2:
+    type: std_msgs/msg/String
+    from_domain: 88
+    to_domain: 48
+    remap: /result_topic_2
+
+  arrive_topic_1:
+    type: std_msgs/msg/String
+    from_domain: 40
+    to_domain: 88
+    remap: arrive_topic_1
+  arrive_topic_2:
+    type: std_msgs/msg/String
+    from_domain: 48
+    to_domain: 88
+    remap: arrive_topic_2
+
+  goal_pose_1:
+    type: geometry_msgs/msg/PoseStamped
+    from_domain: 88
+    to_domain: 40
+    remap: goal_pose
+  goal_pose_2:
+    type: geometry_msgs/msg/PoseStamped
+    from_domain: 88
+    to_domain: 48
+    remap: goal_pose
+
+  # map_robot_1:
+  #   type: nav_msgs/msg/OccupancyGrid
   #   from_domain: 40
   #   to_domain: 48
-
-  # allocate_task_88:
-  #   type: task_msgs/srv/AllocateTask
+  # map_robot_2:
+  #   type: nav_msgs/msg/OccupancyGrid
   #   from_domain: 88
   #   to_domain: 48
 
-    
-    
-  # obstacle:
-  #   type: task_msgs/msg/CurrentPath
-  #   from_domain: 88
-  #   to_domain: 40
-  #   remap: obstacle_robot_1
-  # obstacle:
-  #   type: task_msgs/msg/CurrentPath
-  #   from_domain: 40
-  #   to_domain: 88
-  #   remap: obstacle_robot_2
+  odom:
+    type: nav_msgs/msg/Odometry
+    from_domain: 40
+    to_domain: 48
+    remap: odom_robot_1
+  odom:
+    type: nav_msgs/msg/Odometry
+    from_domain: 88
+    to_domain: 48
+    remap: odom_robot_2
 
+  base_controller/cmd_vel_unstamped_1:
+    type: geometry_msgs/msg/Twist
+    from_domain: 88
+    to_domain: 40
+    remap: base_controller/cmd_vel_unstamped
+  base_controller/cmd_vel_unstamped_2:
+    type: geometry_msgs/msg/Twist
+    from_domain: 48
+    to_domain: 88
+    remap: base_controller/cmd_vel_unstamped
 
-  # task_completion:
-  #   type: task_msgs/msg/TaskCompletion
-  #   from_domain: 40
-  #   to_domain: 48
-
-  # task_completion:
-  #   type: task_msgs/msg/TaskCompletion
-  #   from_domain: 88
-  #   to_domain: 48
+  planned_path:
+      type: 'nav_msgs/msg/Path'
+      from_domain: 48
+      to_domain: 40
+      remap: planned_path_1
+  planned_path:
+      type: 'nav_msgs/msg/Path'
+      from_domain: 48
+      to_domain: 88
+      remap: planned_path_2

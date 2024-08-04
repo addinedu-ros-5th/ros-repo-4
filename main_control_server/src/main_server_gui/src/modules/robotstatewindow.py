@@ -23,7 +23,12 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../.
 from communication_robot_node import AmclSubscriber 
 
 # YAML 파일 경로
-yaml_file_path = '/home/edu/dev_ws/git_ws2/ros-repo-4/main_control_server/params/db_user_info.yaml'
+# yaml_file_path = '/home/edu/dev_ws/git_ws2/ros-repo-4/main_control_server/params/db_user_info.yaml'
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+db_user_info_path = os.path.join(current_dir, "../../../../../params/db_user_info.yaml")
+yaml_file_path = os.path.abspath(db_user_info_path)
+
 
 # 지도 파일 경로
 map_yaml_file = os.path.join(get_package_share_directory('main_server_gui'), 'map', 'mfc.yaml')
