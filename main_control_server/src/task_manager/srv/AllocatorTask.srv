@@ -1,10 +1,10 @@
 string task_code
 string[] product_code_list # ['P02', 'P01', 'P03']
 string task_type
-string robot_name           # 로봇 이름
-string battery_status       # 배터리 상태
-string status               # 로봇 상태
-# float estimated_completion_time  # 예상 완료 시간
+string[] robot_name
+string[] battery_status
+string[] status
+string[] estimated_completion_time
 ---
 string robot_name  
 string task_code 

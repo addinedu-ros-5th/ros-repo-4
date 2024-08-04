@@ -27,11 +27,12 @@ class OrderListService(Node):
         self.total_items_to_inspect = 0
         self.inspected_items_count = 0
         self.current_task_code = None # 현재 그룹의 task_code를 저장할 변수 추가
-        self.product_code_list = []  # 현재 그룹의 product_code 리스트를 저장할 변수 추가
-        self.robot_info = None  # 로봇 정보를 저장할 변수 삐삐 뽀뽀~
+        self.product_code_list = []  # 현재 그룹의 product_code 리스트를 저장할  변수 추가
+        
+        self.robot_info_list = []  # 로봇 정보를 저장할 리스트  # 로봇 정보를 저장할 변수 삐삐 뽀뽀~
+        self.robot_names = ["Robo1", "Robo2"]  # 모든 로봇 이름 리스트
 
-
-
+        
         # list gui가 db에 저장완료했다고 신호받고 첫행 꺼내오기
         self.subscription = self.create_subscription(
             DbUpdate,
@@ -77,9 +78,10 @@ class OrderListService(Node):
             self.get_logger().info('UpdateDB Service not available, waiting again...')
         self.get_logger().info('UpdateDB Service available, ready to send request.')
 
-        self.updateDB_client()
+        for robot_name in self.robot_names:
+            self.updateDB_client(robot_name)
 
-    def updateDB_client(self):
+    def updateDB_client(self,robot_name):
         if not self.client:
             self.get_logger().error('Client not initialized')
             return
@@ -87,10 +89,9 @@ class OrderListService(Node):
         request = UpdateDB.Request()
 
         # 'UpdateDB' 서비스 Request 메세지 타입: Robot_Name
-        request.robot_name = "Robo1"                      # 디버깅용
+        request.robot_name = robot_name                     # 디버깅용
         future = self.client.call_async(request)       
         future.add_done_callback(self.callback_response)  # 응답 콜백 설정
-
 
     def task_progress_callback(self, msg):                                                  # new
         self.get_logger().info(f'Received task progress from robot_state_manager: {msg.robot_name}')                       
@@ -102,9 +103,8 @@ class OrderListService(Node):
     def callback_response(self, future):
         try:
             response = future.result()
-            self.get_logger().info(f'Received response: \n{response.robot_name}, {response.status}, {response.battery_status} ')
-            self.robot_info = response  # 로봇 정보를 저장
-            print(self.robot_info)
+            self.get_logger().info(f'Received response: \n{response.robot_name}, {response.status}, {response.battery_status},{response.estimated_completion_time}  ')
+            self.robot_info_list.append(response)
         except Exception as e:
             self.get_logger().error(f'Failed to receive response: {e}')
             self.robot_info = None
@@ -241,14 +241,12 @@ class OrderListService(Node):
 
         # 다음 인덱스가 현재 작업 코드와 다를 경우
         if (self.inspection_index < len(self.grouped_items) and self.grouped_items[self.inspection_index][0] != self.current_task_code):
-            self.updateDB_client()
-            self.send_task_allocation_request(self.current_task_code, self.product_code_list,"입고", self.robot_info)
-            self.product_code_list = [] #list초기화
+            self.request_robot_info_and_allocate_task()
+        
 
         # 모든 검수가 완료되었을 경우
         if self.inspected_items_count == self.total_items_to_inspect:
-            self.updateDB_client()
-            self.send_task_allocation_request(self.current_task_code, self.product_code_list,"입고", self.robot_info)
+            self.request_robot_info_and_allocate_task()
             self.get_logger().info('All inspections complete. Sending task allocation requests.')
 
         # else:
@@ -281,19 +279,30 @@ class OrderListService(Node):
         self.publisher_update_gui.publish(msg)
         self.get_logger().info(f'Sent GUI update signal for product {product_code} with status {status}')
 
+    def request_robot_info_and_allocate_task(self):
+        robot_names = ["Robo1", "Robo2"]  # 모든 로봇 이름 리스트
 
-    def send_task_allocation_request(self,  task_code, product_code_list,task_type,robot_info=None):
+        for robot_name in robot_names:
+            self.updateDB_client(robot_name)
+
+        # 모든 로봇 정보를 수집한 후 task allocation 요청
+        self.send_task_allocation_request(self.current_task_code, self.product_code_list, "입고", self.robot_info_list)
+        self.product_code_list = []  # list 초기화
+
+
+    def send_task_allocation_request(self, task_code, product_code_list, task_type, robot_info_list=None):
         request = AllocatorTask.Request()
         request.task_code = f"Task_{task_code}"
         request.product_code_list = product_code_list
         request.task_type = task_type
 
         # 로봇 정보를 request에 추가
-        if robot_info:
-            request.robot_name = robot_info.robot_name
-            request.battery_status = robot_info.battery_status
-            request.status = robot_info.status
-            # request.estimated_completion_time = robot_info.estimated_completion_time
+        if robot_info_list:
+            request.robot_name = [str(robot_info.robot_name) for robot_info in robot_info_list]
+            request.battery_status = [str(robot_info.battery_status) for robot_info in robot_info_list]
+            request.status = [str(robot_info.status) for robot_info in robot_info_list]
+            request.estimated_completion_time = [str(robot_info.estimated_completion_time) for robot_info in robot_info_list]
+
 
         self.future = self.task_allocator_client.call_async(request)
         self.get_logger().info(f'Sending task allocation request for task_code: task_{task_code} with product_code_list: {product_code_list}')

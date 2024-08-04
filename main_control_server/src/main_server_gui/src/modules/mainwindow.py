@@ -72,16 +72,6 @@ class MainWindow(QtWidgets.QMainWindow):
         # Signal 연결
         self.inbound_list_signal.connect(self.display_inbound_list)
         self.inbound_status_db_update_signal.connect(self.show_inbound_management)
-
-    
-    def get_mysql_connection(self):
-        try:
-            # db_instance = Connect("team4", "0444")
-            db_instance = Connect("root", "asdf")
-            return db_instance
-        except con.Error as err:
-            print(f"Error: {err}")
-            return None
        
     def toggleClock(self):
         if self.startButton.text() == 'Start':
@@ -294,4 +284,3 @@ class MainWindow(QtWidgets.QMainWindow):
             self.robot_state_window = RobotStateWindow(self)
         self.robot_state_window.show()
         self.close()
-

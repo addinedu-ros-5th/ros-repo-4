@@ -22,7 +22,7 @@ from task_manager.msg import SendAllocationResults
 from std_msgs.msg import String
 
 # YAML 파일 경로
-yaml_file_path = '/home/edu/dev_ws/git_ws2/ros-repo-4/main_control_server/params/db_user_info.yaml'
+yaml_file_path = '/home/min/dev_ws/ros-repo-4/main_control_server/params/db_user_info.yaml'
 
 # YAML 파일을 읽어 파라미터를 가져옴
 def load_db_params(file_path):
@@ -32,12 +32,8 @@ def load_db_params(file_path):
 
 def get_mysql_connection():
     try:
-<<<<<<< HEAD
-        db_instance = Connect("root", "asdf")
-=======
         db_id, db_pw = load_db_params(yaml_file_path)
         db_instance = Connect(db_id, db_pw)
->>>>>>> 07b9818d4ac797aa0a4b0603716d9c00cfa10a66
         return db_instance
     except con.Error as err:
         print(f"Error: {err}")
