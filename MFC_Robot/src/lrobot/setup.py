@@ -1,6 +1,6 @@
-from setuptools import find_packages, setup
 import os
 from glob import glob
+from setuptools import find_packages, setup
 
 package_name = 'lrobot'
 
@@ -12,7 +12,8 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', ['launch/robot_controller_launch.py']),
+        ('share/' + package_name + '/launch', glob('launch/*.py')),
+        (os.path.join('share', package_name, 'msg'), glob('msgs/*.msg')),
         ('share/' + package_name + '/maps', glob('maps/*')),
     ],
     install_requires=['setuptools'],
@@ -24,9 +25,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'path_server = lrobot.path_server:main',
             'robot_drive = lrobot.robot_drive:main',
-            'a_star = lrobot.astar:main',
+            'robot_state_action_client_node = lrobot.robot_state_action_client:main',
+            'robot_control = lrobot.robot_control:main',
         ],
     },
 )

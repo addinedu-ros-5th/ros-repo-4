@@ -37,7 +37,11 @@ class SensorSender(Node):
         self.lidar_buffer = []
         
         # PC 서버 설정 (PC의 IP 주소를 사용)
+<<<<<<< HEAD
         self.pc_ip = '172.30.1.49'  # 예: PC의 IP 주소
+=======
+        self.pc_ip = '192.168.2.17'  # 예: PC의 IP 주소
+>>>>>>> a4475bde205610f879fc268b10453883c5d566d8
         self.pc_port = 8080
         self.connect_to_server()
     
@@ -70,6 +74,7 @@ class SensorSender(Node):
         self.send_data()
 
     def lidar_callback(self, msg):
+
         # 라이다 데이터를 JSON 형식으로 변환
         lidar_data = {
             'angle_min': msg.angle_min,
@@ -108,7 +113,7 @@ class SensorSender(Node):
         print(f"Sending total data of length: {total_length}")
 
         try:
-            # 데이터 길이 전송buffer
+            # 데이터 길이 전송
             self.client_socket.sendall(total_length.to_bytes(4, 'big'))
 
             # 이미지 데이터 길이 전송

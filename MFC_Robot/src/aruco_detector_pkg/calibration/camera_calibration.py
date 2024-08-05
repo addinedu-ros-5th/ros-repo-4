@@ -3,10 +3,10 @@ import os
 import numpy as np
 
 # Checker board size
-CHESS_BOARD_DIM = (9, 6)
+CHESS_BOARD_DIM = (7, 5)
 
 # The size of Square in the checker board.
-SQUARE_SIZE = 19  # millimeters
+SQUARE_SIZE = 30  # millimeters
 
 # termination criteria
 criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -64,7 +64,7 @@ print("calibrated")
 
 print("duming the data into one files using numpy ")
 np.savez(
-    f"{calib_data_path}/MultiMatrix",
+    f"{calib_data_path}/MultiMatrix_mk",
     camMatrix=mtx,
     distCoef=dist,
     rVector=rvecs,
@@ -75,7 +75,7 @@ print("-------------------------------------------")
 
 print("loading data stored using numpy savez function\n \n \n")
 
-data = np.load(f"{calib_data_path}/MultiMatrix.npz")
+data = np.load(f"{calib_data_path}/MultiMatrix_mk.npz")
 
 camMatrix = data["camMatrix"]
 distCof = data["distCoef"]

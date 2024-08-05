@@ -17,6 +17,10 @@ product_to_location = {
     "P16": "F", "P17": "F", "P18": "F",
 }
 
+# 렉의 우선순위
+rack_priority = ["C", "B", "A", "F", "E", "D"]
+
+
 def calculate_distance(rack1, rack2):
     x1, y1 = rack_coordinates[rack1]
     x2, y2 = rack_coordinates[rack2]
@@ -25,21 +29,26 @@ def calculate_distance(rack1, rack2):
 def group_items(order_list):
     # 렉 별로 아이템을 그룹화
     rack_to_items = defaultdict(list)
+    
+    
     for item in order_list:
         rack_to_items[product_to_location[item]].append(item)
-    
-    tasks = []
+
+    tasks = []      
     used_items = set()
     
-    # 같은 렉에 있는 아이템을 우선으로 그룹화
-    for rack, items in rack_to_items.items():
-        if len(items) >= 3:
-            for i in range(0, len(items), 3):
-                task_items = items[i:i+3]
-                if len(task_items) == 3:
-                    tasks.append(task_items)
-                    used_items.update(task_items)
+    sorted_racks = sorted(rack_to_items.keys(), key=lambda x: rack_priority.index(x))
     
+    # 같은 렉에 있는 아이템을 우선으로 그룹화
+    for rack in sorted_racks:
+        items = rack_to_items[rack]
+        while len(items) >= 3:
+            task_items = items[:3]
+            tasks.append(task_items)
+            used_items.update(task_items)
+            items = items[3:]
+
+
     # 사용되지 않은 아이템들을 인접한 렉의 아이템들과 그룹화
     remaining_items = [item for item in order_list if item not in used_items]
     remaining_items_by_rack = defaultdict(list)
@@ -67,3 +76,11 @@ def group_items(order_list):
     
     return tasks
 
+
+
+# # 예제 order_list
+# order_list = ["P01", "P03", "P04",  "P06", "P10", "P13", "P16", "P17", "P18"]
+
+# # 그룹화된 작업 단위 출력
+# tasks = group_items(order_list)
+# print(tasks)

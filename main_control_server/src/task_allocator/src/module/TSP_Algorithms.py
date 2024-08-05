@@ -1,105 +1,100 @@
-import random
-from collections import Counter
 import numpy as np
-from itertools import permutations
-import time
 
-# 6개의 원을 3행 2열로 배치
-positions = {
-    'RA': (0, 1),
-    'RB': (0, 2),
-    'RC': (0, 3),
-    'RD': (1, 1),
-    'RE': (1, 2),
-    'RF': (1, 3)
+# 최적 배터리 임계값 (작업 개수에 따라)
+optimal_charge_thresholds = {
+    1: 40,
+    2: 50,
+    3: 60
 }
 
-# 앞줄 렉 (로봇과 가까운 쪽)
-front_racks = {'RD', 'RE', 'RF'}
+# 비용 계산 함수
+def calculate_cost(robot, task_count):
+    battery_factor = (100 - robot['battery_level']) / 100
+    workload_factor = robot['total_workload'] / 3
+    return battery_factor + workload_factor
 
-# 원 선택 함수
-def select_nodes():
-    racks = ['RA', 'RB', 'RC', 'RD', 'RE', 'RF']
-    num_items = random.randint(6, 18)
-    items = []
-    while len(items) < num_items:
-        rack = random.choice(racks)
-        if items.count(rack) < 3:
-            items.append(rack)
-    return items
+# 경매 기반 작업 할당 함수
+def auction_based_task_allocation(tasks, robots):
+    task_allocations = []
 
-# 거리 행렬 생성 함수
-def create_distance_matrix(nodes, positions):
-    unique_nodes = list(set(nodes))
-    n = len(unique_nodes)
-    dists = np.zeros((n, n))
-    for i, u in enumerate(unique_nodes):
-        for j, v in enumerate(unique_nodes):
-            if i != j:
-                dists[i][j] = np.linalg.norm(np.array(positions[u]) - np.array(positions[v]))
-    return dists, unique_nodes
+    for task_id, (task_code, task_products) in enumerate(tasks.items()):
+        task_count = len(task_products)  # 작업 개수
+        charge_threshold = optimal_charge_thresholds[task_count]
+        min_cost = float('inf')
+        selected_robot = None
 
-# 경로 길이 계산 함수
-def calculate_path_length(path, dists, node_indices):
-    length = 0
-    for i in range(len(path) - 1):
-        length += dists[node_indices[path[i]]][node_indices[path[i + 1]]]
-    length += dists[node_indices[path[-1]]][node_indices[path[0]]]  # 마지막 위치에서 시작 위치로 돌아오는 거리 추가
-    return length
+        for robot_name, robot in robots.items():
+            if robot['status'] in ['오류 발생', '유지보수 중']:
+                continue
 
-# 최근접 이웃 알고리즘 함수
-def nearest_neighbor_algorithm(nodes, dists, start_index=0):
-    n = len(nodes)
-    node_indices = {node: i for i, node in enumerate(nodes)}
-    path = [nodes[start_index]]
-    visited = {nodes[start_index]}
-    while len(path) < n:
-        last = path[-1]
-        next_node = min((dists[node_indices[last]][node_indices[node]], node) for node in nodes if node not in visited)[1]
-        path.append(next_node)
-        visited.add(next_node)
-    return path, calculate_path_length(path, dists, node_indices)
+            cost = calculate_cost(robot, task_count)
+            if robot['status'] == '대기중' and robot['battery_level'] == 100:
+                selected_robot = robot_name
+                break
+            elif robot['status'] == '충전중' and robot['battery_level'] >= charge_threshold:
+                if cost < min_cost:
+                    min_cost = cost
+                    selected_robot = robot_name
+            elif robot['status'] == '작업중':
+                if (task_count == 1 and robot['battery_level'] >= 40) or \
+                   (task_count == 2 and ((robot['total_workload'] == 1 and robot['battery_level'] >= 60) or 
+                                         (robot['total_workload'] == 2 and robot['battery_level'] >= 60) or 
+                                         (robot['total_workload'] == 3 and robot['battery_level'] >= 70))) or \
+                   (task_count == 3 and ((robot['total_workload'] == 1 and robot['battery_level'] >= 90) or 
+                                         (robot['total_workload'] == 2 and robot['battery_level'] >= 80) or 
+                                         (robot['total_workload'] == 3 and robot['battery_level'] >= 70))):
+                    if cost < min_cost:
+                        min_cost = cost
+                        selected_robot = robot_name
 
-# 같은 렉을 한 번에 방문하도록 최적화 함수
-def optimize_robot_path(selected_nodes, positions):
-    unique_nodes = list(set(selected_nodes))
-    dists, unique_nodes = create_distance_matrix(unique_nodes, positions)
+        # 적합한 로봇이 없으면 가장 낮은 비용을 제시한 로봇 선택
+        if selected_robot is None:
+            for robot_name, robot in robots.items():
+                if robot['status'] not in ['오류 발생', '유지보수 중']:
+                    cost = calculate_cost(robot, task_count)
+                    if cost < min_cost:
+                        min_cost = cost
+                        selected_robot = robot_name
 
-    # 시작 인덱스 설정
-    start_index = next((i for i, node in enumerate(unique_nodes) if node in front_racks), 0)
+        if selected_robot is not None:
+            # 선택된 로봇에 작업 할당 및 상태 업데이트
+            robots[selected_robot]['status'] = '작업중'
+            robots[selected_robot]['total_workload'] += task_count
+            robots[selected_robot]['battery_level'] -= task_count * 10  # 작업 수행 시 배터리 소모
+            task_allocations.append({
+                'task_code': task_code,
+                'robot_name': selected_robot,
+                'task_products': task_products
+            })
+        else:
+            task_allocations.append({
+                'task_code': task_code,
+                'robot_name': 'None',
+                'task_products': [],
+                'message': 'No suitable robot found'
+            })
 
-    # 최적 경로 계산 (근사 알고리즘 사용)
-    path, length = nearest_neighbor_algorithm(unique_nodes, dists, start_index)
+    return task_allocations
 
-    return path, length
 
-# 메인 함수
-def main():
-    # 랜덤으로 6개에서 18개의 원 선택, 같은 원은 최대 3개까지
-    selected_items = select_nodes()
-    print("Selected Items:", selected_items)
-    print("Item Counts:", Counter(selected_items))
+# # 예제 작업 리스트와 로봇 상태
+# tasks = {
+#     'T1': ['P01', 'P04', 'P07'],
+#     'T2': ['P10', 'P13'],
+#     'T3': ['P16']
+# }
 
-    # 물건을 로봇이 싣을 수 있는 단위로 분리
-    item_counts = Counter(selected_items)
-    batches = []
-    for rack, count in item_counts.items():
-        for _ in range(count // 3):
-            batches.append([rack] * 3)
-        if count % 3:
-            batches.append([rack] * (count % 3))
+# robots = {
+#     'Robo1': {'battery_level': 80, 'status': '대기중', 'total_workload': 0},
+#     'Robo2': {'battery_level': 50, 'status': '충전중', 'total_workload': 0},
+#     'Robo3': {'battery_level': 60, 'status': '작업중', 'total_workload': 1},
+#     'Robo4': {'battery_level': 40, 'status': '충전중', 'total_workload': 0},
+#     'Robo5': {'battery_level': 90, 'status': '대기중', 'total_workload': 0}
+# }
 
-    total_path = []
-    total_length = 0
+# # 작업 할당 실행
+# allocations = auction_based_task_allocation(tasks, robots)
 
-    # 각 배치에 대해 최적 경로 계산
-    for batch in batches:
-        path, length = optimize_robot_path(batch, positions)
-        total_path.extend(path)
-        total_length += length
-
-    print(f"Total Path: {total_path}")
-    print(f"Total Path Length: {total_length}")
-
-if __name__ == "__main__":
-    main()
+# # 할당 결과 출력
+# for allocation in allocations:
+#     print(allocation)

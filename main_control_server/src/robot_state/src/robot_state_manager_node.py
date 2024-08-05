@@ -24,7 +24,7 @@ from robot_state.msg import AllTaskDone
 from robot_state.msg import RackList
 
 # YAML 파일 경로
-yaml_file_path = '/home/edu/dev_ws/git_ws2/ros-repo-4/main_control_server/params/db_user_info.yaml'
+yaml_file_path = '/home/min/dev_ws/ros-repo-4/main_control_server/params/db_user_info.yaml'
 
 # YAML 파일을 읽어 파라미터를 가져옴
 def load_db_params(file_path):
@@ -40,6 +40,7 @@ def get_mysql_connection():
     except con.Error as err:
         print(f"Error: {err}")
         return None    
+
 
 class UpdateRobotState():
     def __init__(self, db_instance):
@@ -84,37 +85,31 @@ class MFCRobotManager(Node):
             'send_allocation_results',
             self.task_assignment_callback,
             10)
-        self.allocation_results_sub
+        
+        # 'String' 메세지 타입 subscriber                                # new 0801        
+        self.task_completes_results_sub = self.create_subscription(
+            String,
+            'result_topic',
+            self.task_complete_callback,
+            10)
 
-        # 'AllTaskDone' 메세지 타입의 subscriber
-        self.all_task_done_sub = self.create_subscription(                                  # new 0805
-            AllTaskDone,
-            'send_all_task_done_results',
-            self.all_task_done_callback,
-            10
-            )
-        self.all_task_done_sub    
-
-    def all_task_done_callback(self, msg):                                                  # new 0801
+    def task_complete_callback(self, msg):                            # new 0801
         global Robot_Name
         global Rack_List
         global Task_Assignment
-        
-        if (msg.result_msg == "All done"):
-            rack_list_str = str(Rack_List).replace('[', '').replace(']', '').replace("'", "")  
-            ############################# 여기에 'Status' 열 == 작업중 ->  대기중 필요 #############################
+
+        ## 여기에 'Status' 열 작업 중 -> 작업 완료 필요 ##
+        if (msg.data == "All done"):
             query = f"""
                     update Robot_manager 
-                    set Status = '대기중' 
-                    where Robot_Name = '{Robot_Name}' 
-                            AND Rack_List = '{rack_list_str}' 
-                            AND Status = '작업중' 
-                            AND Task_Assignment = '{Task_Assignment}';
+                    set Status = '작업완료' 
+                    where Robot_Name = {Robot_Name} AND Rack_List = {Rack_List} AND Status = '작업중' OR Status = '대기중';
                     """
             self.update_robot_state.updateData(query)
         else:
-            self.get_logger().info("작업중...")
-    
+            self.get_logger().info("작업 중...")
+        # elif (msg.data == "dddd")                                  # new 0801
+
     def update_db_callback(self, request, response):
         # 디버깅용
         print(f"Request : , \n{request}")                                                                      # 4번 출력
@@ -123,6 +118,7 @@ class MFCRobotManager(Node):
         ## 여기에 mysql문으로 불러온 것 필요
         robot_name = request.robot_name
 
+        ##############################여기서 estimated_completion_time response 업데이트################
         # timestamp 기준으로 각 로봇 최신 상태 대한 query문  
         if robot_name == "Robo1":    
             query = f"SELECT Robot_Name, Status, Estimated_Completion_Time, Battery_Status FROM Robot_manager WHERE Robot_Name = '{robot_name}' ORDER BY Time DESC LIMIT 1;"
@@ -157,6 +153,10 @@ class MFCRobotManager(Node):
         Task_Code = msg.task_code
         Rack_List = msg.rack_list
         Task_Assignment = msg.task_assignment
+        
+        print(f"It is in MFCRobotManager")                                              # 2번 출력
+        print(Robot_Name, Task_Code, Rack_List, Task_Assignment)                        
+        print('################################################################')
 
         estimated_completion_time = len(Rack_List)
         print(estimated_completion_time)
@@ -164,20 +164,21 @@ class MFCRobotManager(Node):
         rack_list_str = str(Rack_List).replace('[', '').replace(']', '').replace("'", "")  # Format Rack_List correctly
         ######## 여기서 Robot_manager 테이블에 등록하기  ########
         query = f"""
-            UPDATE Robot_manager
-            SET
-                IFNULL(MAX(Num), 0) + 1,
-                Location_X = 0.0,
-                Location_Y = 0.0,
-                Rack_List = '{rack_list_str}',
-                Status = '작업중',
-                Estimated_Completion_Time = {float(estimated_completion_time)},
-                Battery_Status = IFNULL((SELECT Battery_Status FROM (SELECT * FROM Robot_manager) AS subquery ORDER BY Num DESC LIMIT 1), '100%'),
-                Task_Assignment = '{Task_Assignment}',
-                Error_Codes = 'None',
-                Time = NOW()
-            WHERE
-                Robot_Name = '{Robot_Name}';
+                INSERT INTO Robot_manager (Num, Robot_Name, Location_X, Location_Y, Rack_List, Status, Estimated_Completion_Time, Battery_Status, Task_Assignment, Error_Codes, Time)
+                SELECT
+                    IFNULL(MAX(Num), 0) + 1,
+                    '{Robot_Name}',
+                    0.,
+                    0.,
+                    '{rack_list_str}',
+                    '작업중',
+                    {float(estimated_completion_time)},
+                    IFNULL((SELECT Battery_Status FROM Robot_manager ORDER BY Num DESC LIMIT 1), '100%'),
+                    '{Task_Assignment}',
+                    "None",
+                    NOW()
+                FROM
+                    Robot_manager;
         """
         self.update_robot_state.updateData(query)
         print("Succeeding to insert in Robot_manager")

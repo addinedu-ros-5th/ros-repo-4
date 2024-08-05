@@ -4,26 +4,28 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 import json
-from .yolo_loads import YoloDetector  # YOLO 모델 불러오기
-from .distance_calculator import DistanceCalculator  # 거리 계산 모듈 불러오기
-from .data_handle import DataHandler  # 데이터 핸들링 모듈 불러오기
+from .yolo_loads import YoloDetector
+from .distance_calculator import DistanceCalculator
+from .data_handle import DataHandler
 
 # 서버 설정
 server_ip = '0.0.0.0'
 server_port = 8080
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((server_ip, server_port))
-server_socket.listen(1)
+server_socket.listen(3)
 
 print(f"Server listening on {server_ip}:{server_port}")
 
 class DetectionClient(Node):
     def __init__(self):
         super().__init__('detection_client')
-        self.publisher = self.create_publisher(String, 'detection_result', 10)
+        self.publisher = self.create_publisher(String, 'result_topic_robo_1', 10)
+        self.robot_id = 'robot_1'  # Add robot_id as a member variable
 
     def send_detection_data(self, labels, distances):
         detection_data = {
+            'robot_id': self.robot_id,  # Include robot_id in the detection data
             'labels': labels,
             'distances': distances
         }
@@ -53,23 +55,21 @@ def main():
                         break
 
                     results = yolo_detector.detect_objects(image)
-                    
-                    # 화면 중심 계산
-                    img_center_x = image.shape[1] // 2
 
                     labels = []
                     distances = []
                     detected_people = False
                     annotated_image = image.copy()
+                    image_center = image.shape[1] // 2
+                    detection_range_left = image_center - 100
+                    detection_range_right = image_center + 100
+
                     for result in results:
                         for box in result.boxes:
                             if box.cls == 0 and box.conf > 0.7:
-                                # 객체의 중심 좌표 계산
                                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                                 box_center_x = (x1 + x2) // 2
-
-                                # 객체가 화면 중심으로부터 100픽셀 이내에 있는지 확인
-                                if abs(box_center_x - img_center_x) <= 100:
+                                if detection_range_left <= box_center_x <= detection_range_right:
                                     detected_people = True
                                     distance = distance_calculator.calculate_distance(
                                         lidar_data,
@@ -92,7 +92,7 @@ def main():
                         detection_client.send_detection_data(labels, distances)
 
                     if not detected_people:
-                        print("No person detected within the specified range")
+                        print("No person detected")
 
                     cv2.imshow('YOLO Output', annotated_image)
                     if cv2.waitKey(1) & 0xFF == ord('q'):

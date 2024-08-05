@@ -7,9 +7,21 @@
   <maintainer email="mk@todo.todo">mk</maintainer>
   <license>TODO: License declaration</license>
 
-    <depend>rclpy</depend>
+  <!-- ROS 2 기본 패키지 의존성 -->
+  <depend>rclpy</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>nav2_simple_commander</depend>
+  <depend>minibot_interfaces</depend> <!-- GoalPose 메시지를 위한 사용자 정의 패키지 -->
 
+  <!-- Python 라이브러리 의존성 -->
+  <depend>yaml</depend>
+  <depend>numpy</depend>
+  <depend>Pillow</depend>
 
+  <!-- 테스트 종속성 -->
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
   <test_depend>ament_pep257</test_depend>

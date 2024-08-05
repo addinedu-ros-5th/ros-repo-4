@@ -1,78 +1,86 @@
-import time
-import math
 import rclpy
-import subprocess
+import math
+import time
+import threading
 from enum import Enum
 from rclpy.node import Node
-# from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSDurabilityPolicy, QoSHistoryPolicy
-from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
-from geometry_msgs.msg import PoseWithCovarianceStamped, Twist, PoseStamped
-from minibot_interfaces.msg import GoalPose 
-from std_msgs.msg import Header, String
-# from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Path
+from nav_msgs.msg import Path
+from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
+from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped, Twist
+from rclpy.executors import MultiThreadedExecutor
+from std_msgs.msg import String
+from collections import deque
+from sensor_msgs.msg import LaserScan
+from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSDurabilityPolicy, QoSHistoryPolicy
+# from minibot_interfaces.msg import GoalPose, GoalStatus
 
 class RobotState(Enum):
     STOP = 1
     MOVING = 2
     ADJUSTING = 3
-    OBSTACLE = 4
+    # OBSTACLE = 4
+    ARRIVED = 4
+    GO_HOME = 5
+    # TASK_DONE = 6
 
-class RobotDrive(Node):
+
+class PathFollower(Node):
     def __init__(self):
-        super().__init__('robot_drive')
-        self.nav = BasicNavigator()
-        
+        super().__init__('mfc_robot')
+
         # QoS 설정
-        # qos_profile_default = QoSProfile(
-        #     history=QoSHistoryPolicy.KEEP_LAST,
-        #     depth=10,
-        #     reliability=QoSReliabilityPolicy.RELIABLE,
-        #     durability=QoSDurabilityPolicy.VOLATILE
-        # )
+        qos_profile = QoSProfile(
+            history=QoSHistoryPolicy.KEEP_LAST,
+            depth=10,
+            reliability=QoSReliabilityPolicy.BEST_EFFORT,
+            durability=QoSDurabilityPolicy.VOLATILE
+        )
         
-        self.state = RobotState.STOP
-        self.current_pose = None
-        self.goal_pose = None
-        self.saved_path = None
-        self.obstacle = None
-        self.obstacle_detected = False
+        self.subscription = self.create_subscription(Path, 'planned_path_2', self.path_callback, 10)
+        self.amcl_subscription = self.create_subscription(PoseWithCovarianceStamped, '/amcl_pose', self.amcl_callback, 10)
+        self.adjustment_complete_subscription = self.create_subscription(String, 'robo_2/adjust_complete', self.adjustment_complete_callback, 10)
+        self.laser_subscription = self.create_subscription(LaserScan, 'scan', self.laser_callback, qos_profile)
         
-        self.kp_linear = 0.5
-        self.ki_linear = 0.0
-        self.kd_linear = 0.1
-        self.kp_angular = 1.0
-        self.ki_angular = 0.0
-        self.kd_angular = 0.1
-        self.prev_error_linear = 0.0
-        self.prev_error_angular = 0.0
-        self.integral_linear = 0.0
-        self.integral_angular = 0.0
-
-        # Publisher
-        self.initial_pose_publisher = self.create_publisher(PoseWithCovarianceStamped, '/initialpose', 10)
-        self.state_publisher = self.create_publisher(String, 'state_topic', 10)
+        self.initial_pose_publisher = self.create_publisher(PoseWithCovarianceStamped, 'initialpose', 10)
+        self.status_publisher = self.create_publisher(String, 'goal_status', 10) 
+        self.robot_state_publisher = self.create_publisher(String, 'robo_2/robot_state', 10) 
         self.cmd_vel_publisher = self.create_publisher(Twist, 'cmd_vel', 10)
-        
-        # Subscriber
-        self.amclPose_subscription = self.create_subscription(PoseWithCovarianceStamped, '/amcl_pose', self.amclPose_callback, 10)
-        self.obstacle_subscriber = self.create_subscription(String, 'obstacle_topic', self.obstacle_callback, 10)
-        self.goal_subscription = self.create_subscription(GoalPose, 'target_pose', self.goal_callback, 10)
-        self.path_subscription = self.create_subscription(Path, 'planned_path', self.path_callback, 10)
-        # self.laser_subscription = self.create_subscription(LaserScan, '/scan', self.laser_callback, 10)
-        
-        self.publish_initial_pose()
-        
-        self.nav.waitUntilNav2Active()
-        self.publish_state()
 
-        time.sleep(2)
+        self.nav = BasicNavigator()
+        self.nav.waitUntilNav2Active()
+
+        self.publish_initial_pose()
+
+        self.current_position = None
+        self.current_orientation = None
+        self.path_following_thread = None
+        self.state_changed = False
+        self.obstacle_detected = False
+        self.state = RobotState.STOP
+        
+        self.lock = threading.Lock()
+
+        self.front_angle_range = 15
+
+    def set_state(self, new_state):
+        with self.lock:
+            if self.state != new_state:
+                self.state = new_state
+                self.publish_status()
+
+    def publish_status(self):
+        robot_state_msg = String()
+        robot_state_msg.data = self.state.name 
+        self.robot_state_publisher.publish(robot_state_msg)
+        self.get_logger().info(f"Published state: {self.state.name}")
 
     def publish_initial_pose(self):
         pose_msg = PoseWithCovarianceStamped()
-        pose_msg.header = Header()
         pose_msg.header.frame_id = 'map'
         pose_msg.header.stamp = self.get_clock().now().to_msg()
+
+
         pose_msg.pose.pose.position.x = 0.0
         pose_msg.pose.pose.position.y = 0.0
         pose_msg.pose.pose.position.z = 0.0
@@ -80,115 +88,104 @@ class RobotDrive(Node):
         pose_msg.pose.pose.orientation.y = 0.0
         pose_msg.pose.pose.orientation.z = 0.0
         pose_msg.pose.pose.orientation.w = 1.0
+
+
         pose_msg.pose.covariance = [0.0] * 36
+
+
         self.initial_pose_publisher.publish(pose_msg)
         self.get_logger().info("Published initial pose")
 
-    # 라이다로 장애물 감지 시 사용
-    # def laser_callback(self, msg):
-    #     min_distance = min(msg.ranges)
-    #     if min_distance < 0.2:
-    #         self.obstacle_detected = True
-    #         self.nav.cancelTask()
-    #         self.get_logger().info("Obstacle detected! Stopping the robot.")
-    #     else:
-    #         self.obstacle_detected = False
+    def amcl_callback(self, msg):
+        with self.lock: 
+            self.current_position = msg.pose.pose.position
+            self.current_orientation = msg.pose.pose.orientation
 
-    def amclPose_callback(self, msg):
-        self.current_pose = msg.pose.pose
-    
-    def goal_callback(self, msg):
-        self.goal_pose = (
-            msg.position_x,
-            msg.position_y,
-            msg.orientation_z,
-            msg.orientation_w)
-        self.get_logger().info(f"---------------------------Received new goal pose: {self.goal_pose}")
+    def laser_callback(self, msg):
+        angle_increment = msg.angle_increment 
+        num_angles = len(msg.ranges) 
+        mid_index = num_angles // 2 
+        half_front_range = int((self.front_angle_range / 360) * num_angles / 2)
+
+        front_distances = msg.ranges[mid_index - half_front_range: mid_index + half_front_range]
+
+        min_distance = 0.05
+        self.obstacle_detected = any(distance < min_distance for distance in front_distances)
+        if self.obstacle_detected:
+            # self.get_logger().warn("Obstacle detected in front! Stopping robot.")
+            self.stop_robot()
+            # self.set_state(RobotState.OBSTACLE)
 
     def path_callback(self, msg):
-        if not msg.poses:
-            self.get_logger().error("---------------------------Received empty path")
+        self.get_logger().info(f"Received path with {len(msg.poses)} points.")
+
+        with self.lock:
+            if self.path_following_thread is not None and self.path_following_thread.is_alive():
+                self.get_logger().info("Interrupting previous path following.")
+                self.nav.cancelTask()
+                self.path_following_thread.join()
+
+            self.path_following_thread = threading.Thread(target=self.follow_path, args=(msg.poses,))
+            self.path_following_thread.start()
+
+    def follow_path(self, poses):
+        valid_poses = []
+
+        for i, pose in enumerate(poses):
+            if isinstance(pose, PoseStamped):
+                valid_poses.append(pose)
+                self.get_logger().info(f"Waypoint {i + 1}/{len(poses)}: ({pose.pose.position.x}, {pose.pose.position.y})")
+            else:
+                self.get_logger().error(f"Invalid pose at index {i}, skipping.")
+
+        if not valid_poses:
+            self.get_logger().error("No valid waypoints received, aborting path following.")
             return
-        
-        self.saved_path = msg.poses
-        self.get_logger().info("------------------------Received new path and starting navigation")
-        self.nav.followWaypoints(self.saved_path)
+
         self.set_state(RobotState.MOVING)
-        self.publish_state()
+        self.nav.followWaypoints(valid_poses)
 
         while not self.nav.isTaskComplete():
-            feedback = self.nav.getFeedback()
-            if feedback:
-                current_waypoint_index = feedback.current_waypoint
-                if current_waypoint_index < len(self.saved_path):
-                    current_pose = self.saved_path[current_waypoint_index].pose.position
-                    remaining_distance = math.hypot(
-                        self.saved_path[-1].pose.position.x - current_pose.x,
-                        self.saved_path[-1].pose.position.y - current_pose.y
-                    )
-                    self.get_logger().info(f"Distance remaining: {remaining_distance:.2f} meters")
-                    
-                    if remaining_distance <= 0.02:
-                        self.nav.cancelTask()
-                        self.set_state(RobotState.ADJUSTING)
-                        self.publish_state()
-                        self.reach_goal_orientation()
-                        break
-                    
-                    if self.current_pose:
-                        self.follow_path(current_pose, self.saved_path[-1].pose.position)
-                    
-            # if self.obstacle:
-            #     self.get_logger().info("Stopped due to obstacle")
-            #     return
+            if self.obstacle_detected:
+                self.get_logger().warn("Obstacle in path, waiting for clearance.")
+                time.sleep(3)
+                continue
+            
+            if self.current_position is not None:
+                target_pose = valid_poses[-1].pose.position
+                remaining_distance = math.hypot(
+                    target_pose.x - self.current_position.x,
+                    target_pose.y - self.current_position.y
+                )
+                self.get_logger().info(
+                    f"Distance remaining to final waypoint: {remaining_distance:.2f} meters"
+                )
+
+                if remaining_distance <= 0.1:  
+                    self.get_logger().info("Arrived at final waypoint within tolerance")
+                    break
+
+            time.sleep(0.05)  
 
         result = self.nav.getResult()
         if result == TaskResult.SUCCEEDED:
-            self.get_logger().info("Reached the destination successfully!")
+            self.set_state(RobotState.ADJUSTING)
+            self.adjustment_complete_callback()
         else:
-            self.get_logger().info("Failed to reach the destination.")
-        self.set_state(RobotState.STOP)
-        self.publish_state()
+            self.set_state(RobotState.ADJUSTING)
     
-    def follow_path(self, current_pose, goal_pose):
-        error_linear = math.hypot(goal_pose.x - current_pose.x, goal_pose.y - current_pose.y)
-        goal_yaw = math.atan2(goal_pose.y - current_pose.y, goal_pose.x - current_pose.x)
-        current_yaw = self.calculate_current_yaw(self.current_pose.orientation)
-        error_angular = self.normalize_angle(goal_yaw - current_yaw)
-        
-        self.integral_linear += error_linear
-        self.integral_angular += error_angular
-        
-        derivative_linear = error_linear - self.prev_error_linear
-        derivative_angular = error_angular - self.prev_error_angular
-        
-        self.prev_error_linear = error_linear
-        self.prev_error_angular = error_angular
-        
-        control_signal_linear = (self.kp_linear * error_linear +
-                                 self.ki_linear * self.integral_linear +
-                                 self.kd_linear * derivative_linear)
-        
-        control_signal_angular = (self.kp_angular * error_angular +
-                                  self.ki_angular * self.integral_angular +
-                                  self.kd_angular * derivative_angular)
-        
-        twist = Twist()
-        twist.linear.x = control_signal_linear
-        twist.angular.z = control_signal_angular
-        
-        self.cmd_vel_publisher.publish(twist)
-                
-    # def obstacle_callback(self, msg):
-    #     self.obstacle = msg.data
-    #     if self.obstacle == "obstacle": 
-    #         self.nav.cancelTask() 
-    #         self.stop_robot()
-    #         self.get_logger().info("Obstacle detected! Stopping the robot.")
-    #     else: 
-    #         self.get_logger().info('Obstacle cleared! Resuming movement.')
-    #         if self.saved_path:
-    #             self.nav.followWaypoints(self.saved_path)
+    def adjustment_complete_callback(self, msg):
+        if msg.data == 'adjustment_complete':
+            self.get_logger().info("Adjustment complete. Sending next goal signal.")
+            self.send_next_goal_signal()
+            
+    def send_next_goal_signal(self):
+        self.stop_robot()
+        self.set_state(RobotState.STOP)
+        status_msg = String()
+        status_msg.data = 'completed' 
+        self.status_publisher.publish(status_msg)
+        self.get_logger().info("Requesting next path...")
 
     def stop_robot(self):
         stop_msg = Twist()
@@ -199,279 +196,19 @@ class RobotDrive(Node):
         stop_msg.angular.y = 0.0
         stop_msg.angular.z = 0.0
         self.cmd_vel_publisher.publish(stop_msg)
-
-    def reach_goal_orientation(self):
-        self.get_logger().info('Adjusting to final goal orientation.')
         
-        current_yaw = self.calculate_current_yaw(self.current_pose.orientation)
-        goal_yaw = self.calculate_goal_yaw(self.goal_pose[2], self.goal_pose[3])
-        yaw_diff = self.normalize_angle(goal_yaw - current_yaw)
-
-        twist = Twist()
-
-        while abs(yaw_diff) > 0.01:
-            current_yaw = self.calculate_current_yaw(self.current_pose.orientation)
-            yaw_diff = self.normalize_angle(goal_yaw - current_yaw)
-            
-            twist.angular.z = 0.1 * yaw_diff
-            self.cmd_vel_publisher.publish(twist)
-            rclpy.spin_once(self, timeout_sec=0.1)
-        
-        self.stop_robot()
-        self.get_logger().info('Reached final orientation.')
-        self.set_state(RobotState.STOP)
-        self.publish_state()
-
-    def calculate_current_yaw(self, orientation):
-        siny_cosp = 2 * (orientation.w * orientation.z + orientation.x * orientation.y)
-        cosy_cosp = 1 - 2 * (orientation.y * orientation.y + orientation.z * orientation.z)
-        return math.atan2(siny_cosp, cosy_cosp)
-
-    def calculate_goal_yaw(self, orientation_z, orientation_w):
-        siny_cosp = 2 * (orientation_w * orientation_z)
-        cosy_cosp = 1 - 2 * (orientation_z * orientation_z)
-        return math.atan2(siny_cosp, cosy_cosp)
-
-    def normalize_angle(self, angle):
-        while angle > math.pi:
-            angle -= 2.0 * math.pi
-        while angle < -math.pi:
-            angle += 2.0 * math.pi
-        return angle
-
-    def set_state(self, state):
-        self.state = state
-        self.get_logger().info(f'State set to: {self.state}')
-
-    def publish_state(self):
-        state_msg = String()
-        state_msg.data = f'{self.state}'
-        self.state_publisher.publish(state_msg)
-            
 def main(args=None):
     rclpy.init(args=args)
-    robot_drive = RobotDrive()
-    rclpy.spin(robot_drive)
-    robot_drive.destroy_node()
-    rclpy.shutdown()
+    node = PathFollower()
+    executor = MultiThreadedExecutor()
+
+    try:
+        rclpy.spin(node, executor=executor)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
-
-
-# import time
-# import math
-# import rclpy
-# import subprocess
-# from enum import Enum
-# from rclpy.node import Node
-# from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
-# from geometry_msgs.msg import PoseWithCovarianceStamped, Twist, PoseStamped
-# from minibot_interfaces.msg import GoalPose 
-# from std_msgs.msg import Header, String
-# # from sensor_msgs.msg import LaserScan
-# from nav_msgs.msg import Path
-
-
-# class RobotState(Enum):
-#     STOP = 1
-#     MOVING = 2
-#     ADJUSTING = 3
-#     OBSTACLE = 4
-    
-# class RobotDrive(Node):
-#     def __init__(self):
-#         super().__init__('robot_drive')
-#         self.nav = BasicNavigator()
-        
-#         self.state = RobotState.STOP
-#         self.current_pose = None
-#         self.goal_pose = None
-#         self.saved_path = None
-#         self.obstacle = None
-        
-#         # Publisher
-#         self.initial_pose_publisher = self.create_publisher(PoseWithCovarianceStamped, '/initialpose', 10)
-#         self.state_publisher = self.create_publisher(String, 'state_topic', 10)
-#         self.cmd_vel_publisher = self.create_publisher(Twist, 'cmd_vel', 10)
-        
-#         # Subscriber
-#         self.amclPose_subscription = self.create_subscription(PoseWithCovarianceStamped, 'amcl_pose', self.amclPose_callback, 10)
-#         self.obstacle_subscriber = self.create_subscription(String, 'obstacle_topic', self.obstacle_callback, 10)
-#         self.goal_subscription = self.create_subscription(GoalPose, 'target_pose', self.goal_callback, 10)
-#         self.path_subscription = self.create_subscription(Path, 'planned_path', self.path_callback, 10)
-#         # self.laser_subscription = self.create_subscription(LaserScan, '/scan', self.laser_callback, 10)
-        
-#         self.publish_initial_pose()
-        
-#         self.nav.waitUntilNav2Active()
-#         self.publish_state()
-
-#         time.sleep(2)
-
-#     def publish_initial_pose(self):
-#             pose_msg = PoseWithCovarianceStamped()
-#             pose_msg.header = Header()
-#             pose_msg.header.frame_id = 'map'
-#             pose_msg.header.stamp = self.get_clock().now().to_msg()
-#             pose_msg.pose.pose.position.x = 0.0
-#             pose_msg.pose.pose.position.y = 0.0
-#             pose_msg.pose.pose.position.z = 0.0
-#             pose_msg.pose.pose.orientation.x = 0.0
-#             pose_msg.pose.pose.orientation.y = 0.0
-#             pose_msg.pose.pose.orientation.z = 0.0
-#             pose_msg.pose.pose.orientation.w = 1.0
-#             pose_msg.pose.covariance = [0.0] * 36
-#             self.initial_pose_publisher.publish(pose_msg)
-#             self.get_logger().info("Published initial pose")
-
-#     # 현재 위치를 구독하는 토픽(nav2 map:=mfc.yaml 명령어에서 발행 중인 토픽)
-#     def amclPose_callback(self, msg):
-#         self.current_pose = msg.pose.pose
-    
-#     # 목표 위치를 구독하고, 변수로 지정해주는 메서드
-#     def goal_callback(self, msg):
-#         self.goal_pose = (
-#             msg.position_x,
-#             msg.position_y,
-#             msg.orientation_z,
-#             msg.orientation_w
-#         )
-
-#     # 라이다로 장애물 감지 시 사용
-#     # def laser_callback(self, msg):
-#     #     min_distance = min(msg.ranges)
-#     #     if min_distance < 0.2:
-#     #         self.obstacle_detected = True
-#     #         self.nav.cancelTask()
-#     #         self.get_logger().info("Obstacle detected! Stopping the robot.")
-#     #     else:
-#     #         self.obstacle_detected = False
-
-#     def path_callback(self, msg):
-#         self.saved_path = msg.poses
-#         self.nav.followWaypoints(self.saved_path)
-#         self.set_state(RobotState.MOVING)
-#         self.publish_state()
-
-#         # 경로 완료까지 대기
-#         while not self.nav.isTaskComplete():
-#             feedback = self.nav.getFeedback()
-#             if feedback:
-#                 current_waypoint_index = feedback.current_waypoint
-#                 if current_waypoint_index < len(self.saved_path):
-#                     current_pose = self.saved_path[current_waypoint_index].pose.position
-#                     remaining_distance = math.hypot(
-#                         self.saved_path[-1].pose.position.x - current_pose.x,
-#                         self.saved_path[-1].pose.position.y - current_pose.y
-#                     )
-#                     self.get_logger().info(f"Distance remaining: {remaining_distance:.2f} meters")
-                    
-#                     if remaining_distance <= 0.02:
-#                         self.nav.cancelTask()
-#                         self.state = RobotState.ADJUSTING
-#                         self.publish_state()
-#                         self.reach_goal_orientation()
-                        
-#                         break
-                    
-#             if self.obstacle:
-#                 self.get_logger().info("Stopped due to obstacle")
-#                 return
-
-#         # 최종 결과 확인
-#         result = self.nav.getResult()
-#         if result == TaskResult.SUCCEEDED:
-#             self.get_logger().info("Reached the destination successfully!")
-#         else:
-#             self.get_logger().info("Failed to reach the destination.")
-                
-#         # AI 서버와 사람 인식 시 발행받는 토픽 / 이동중 장애물 발견 시 속도=0, 장애물 사라지면 최근 위치로 재이동
-#     def obstacle_callback(self, msg):
-#         self.obstacle = msg.data
-#         if self.obstacle == "obstacle": 
-#             self.nav.cancelTask() 
-#             self.stop_robot()
-#             self.get_logger().info("Obstacle detected! Stopping the robot.")
-#         else: 
-#             self.get_logger().info('Obstacle cleared! Resuming movement.')
-#             if self.saved_path:
-#                 self.nav.followWaypoints(self.saved_path)
-
-#     def stop_robot(self):
-#         stop_msg = Twist()
-#         stop_msg.linear.x = 0.0
-#         stop_msg.linear.y = 0.0
-#         stop_msg.linear.z = 0.0
-#         stop_msg.angular.x = 0.0
-#         stop_msg.angular.y = 0.0
-#         stop_msg.angular.z = 0.0
-#         self.cmd_vel_publisher.publish(stop_msg)
-
-#     def reach_goal_orientation(self):
-#         self.get_logger().info('Adjusting to final goal orientation.')
-        
-#         current_yaw = self.calculate_current_yaw(self.current_pose.orientation)
-#         goal_yaw = self.calculate_goal_yaw(self.goal_pose[2], self.goal_pose[3])
-#         yaw_diff = self.normalize_angle(goal_yaw - current_yaw)
-
-#         twist = Twist()
-
-#         while abs(yaw_diff) > 0.01:
-#             current_yaw = self.calculate_current_yaw(self.current_pose.orientation)
-#             yaw_diff = self.normalize_angle(goal_yaw - current_yaw)
-            
-#             twist.angular.z = 0.1 * yaw_diff
-#             self.cmd_vel_publisher.publish(twist)
-#             rclpy.spin_once(self, timeout_sec=0.1)
-        
-#         self.stop_robot()
-#         self.get_logger().info('Reached final orientation.')
-#         self.set_state(RobotState.STOP)
-#         self.publish_state()
-
-#     def calculate_current_yaw(self, orientation):
-#         siny_cosp = 2 * (orientation.w * orientation.z + orientation.x * orientation.y)
-#         cosy_cosp = 1 - 2 * (orientation.y * orientation.y + orientation.z * orientation.z)
-#         return math.atan2(siny_cosp, cosy_cosp)
-
-#     def calculate_goal_yaw(self, orientation_z, orientation_w):
-#         siny_cosp = 2 * (orientation_w * orientation_z)
-#         cosy_cosp = 1 - 2 * (orientation_z * orientation_z)
-#         return math.atan2(siny_cosp, cosy_cosp)
-
-#     def normalize_angle(self, angle):
-#         while angle > math.pi:
-#             angle -= 2.0 * math.pi
-#         while angle < -math.pi:
-#             angle += 2.0 * math.pi
-#         return angle
-
-#     # def reach_goal_orientation(self):
-
-#     #     goal_pose = PoseStamped()
-#     #     goal_pose.header.frame_id = 'map'
-#     #     goal_pose.header.stamp = self.nav.get_clock().now().to_msg()
-#     #     goal_pose.pose.orientation.z = self.goal_pose[2]
-#     #     goal_pose.pose.orientation.w = self.goal_pose[3]
-#     #     self.nav.goToPose(goal_pose)
-        
-#     #     if self.goal_pose[3] == goal_pose.pose.orientation.w:
-#     #         self.stop_robot()
-#     #         self.state = RobotState.STOP
-#     #         self.publish_state()
-
-#     def publish_state(self):
-#         state_msg = String()
-#         state_msg.data = f'{self.state}'
-#         self.state_publisher.publish(state_msg)
-            
-# def main(args=None):
-#     rclpy.init(args=args)
-#     robot_drive = RobotDrive()
-#     rclpy.spin(robot_drive)
-#     robot_drive.destroy_node()
-#     rclpy.shutdown()
-
-# if __name__ == '__main__':
-#     main()

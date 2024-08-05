@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'recieve_result_state = robot_manage_pkg.recieve_result_state:main',
+            'bridge_test = robot_manage_pkg.bridge_test:main',
         ],
     },
 )

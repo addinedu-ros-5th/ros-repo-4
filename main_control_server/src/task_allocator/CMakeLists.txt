@@ -23,6 +23,8 @@ install(
 # Install Python modules
 install(
   DIRECTORY src/data
+  DIRECTORY src/module
+
   DESTINATION lib/${PROJECT_NAME}
   FILES_MATCHING PATTERN "*.py"
 )

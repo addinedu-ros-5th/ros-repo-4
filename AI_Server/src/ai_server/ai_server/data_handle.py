@@ -8,28 +8,25 @@ class DataHandler:
 
     def receive_data(self):
         try:
-            total_length = int.from_bytes(self.client_socket.recv(4), 'big')
-            print(f"Receiving total data of length: {total_length}")
+            total_length = self._receive_length()
+            if total_length is None:
+                return None, None
 
-            image_length = int.from_bytes(self.client_socket.recv(4), 'big')
-            print(f"Receiving image data of length: {image_length}")
-            image_data = bytearray()
-            while len(image_data) < image_length:
-                packet = self.client_socket.recv(min(image_length - len(image_data), 4096))
-                if not packet:
-                    break
-                image_data.extend(packet)
-            print(f"Received image data of length: {len(image_data)}")
+            image_length = self._receive_length()
+            if image_length is None:
+                return None, None
 
-            lidar_length = int.from_bytes(self.client_socket.recv(4), 'big')
-            print(f"Receiving lidar data of length: {lidar_length}")
-            lidar_data = bytearray()
-            while len(lidar_data) < lidar_length:
-                packet = self.client_socket.recv(min(lidar_length - len(lidar_data), 4096))
-                if not packet:
-                    break
-                lidar_data.extend(packet)
-            print(f"Received lidar data of length: {len(lidar_data)}")
+            image_data = self._receive_data(image_length)
+            if image_data is None:
+                return None, None
+
+            lidar_length = self._receive_length()
+            if lidar_length is None:
+                return None, None
+
+            lidar_data = self._receive_data(lidar_length)
+            if lidar_data is None:
+                return None, None
 
             # 이미지 데이터 디코딩
             np_array = np.frombuffer(image_data, np.uint8)

@@ -27,3 +27,43 @@ mysql > use DFC_system_db;
 mysql > SOURCE 'DFC_system_db.sql 위치한 절대 경로';
 mysql > show tables;
 ```
+
+
+***
+### 로봇 기동 순서 
+#### (로봇에 원격 접속 후)
+```
+cd ~/final_project/ros-repo-4/scripts
+chmod +x launch_robot.sh launch_map.sh robot_drive.sh
+```
+
+#### 0. 로봇 기동
+```
+cd ~/final_project/ros-repo-4/scripts
+./launch_robot.sh
+```
+#### 1. (다른 터미널 열고) 내 PC에 있는 레파지토리에서 Path_server 코드 실행
+```
+humble
+export ROS_DOMAIN_ID=48
+cd `/final_project/ros-repo-4/MFC_Robot/
+source install/local_setup.bash
+ros2 launch lrobot path_server_launch.py
+```
+#### 2. (다른 터미널 열고) robot_drive 노드 실행
+```
+cd ~/final_project/ros-repo-4/scripts
+./robot_drive.sh
+```
+
+#### 3. (다른 터미널 열고) nav2 맵 실행
+```
+cd ~/final_project/ros-repo-4/scripts
+./launch_map.sh
+```
+#### 4. (다른 터미널 열고) 내 PC에 연결된 터미널에서 [임시] 목표 좌표 발행
+```
+humble
+export ROS_DOMAIN_ID=48
+ros2 topic pub /target_pose minibot_interfaces/GoalPose "{position_x: 1.04, position_y: 1.45, orientation_z: 0.7, orientation_w: 0.7}" --once
+```

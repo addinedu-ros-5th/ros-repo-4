@@ -2,7 +2,7 @@
 import yaml
 import rclpy
 from rclpy.node import Node
-
+import os
 from task_manager.msg import DbUpdate, GuiUpdate
 from task_manager.msg import StartInspection, InspectionComplete, SendAllocationResults, SendLightOnResults
 from task_manager.srv import GenerateOrder, AllocatorTask
@@ -27,8 +27,12 @@ class OrderListService(Node):
         self.total_items_to_inspect = 0
         self.inspected_items_count = 0
         self.current_task_code = None # 현재 그룹의 task_code를 저장할 변수 추가
-        self.product_code_list = []  # 현재 그룹의 product_code 리스트를 저장할 변수 추가
+        self.product_code_list = []  # 현재 그룹의 product_code 리스트를 저장할  변수 추가
+        
+        self.robot_info_list = []  # 로봇 정보를 저장할 리스트  # 로봇 정보를 저장할 변수 삐삐 뽀뽀~
+        self.robot_names = ["Robo1", "Robo2"]  # 모든 로봇 이름 리스트
 
+        
         # list gui가 db에 저장완료했다고 신호받고 첫행 꺼내오기
         self.subscription = self.create_subscription(
             DbUpdate,
@@ -74,16 +78,18 @@ class OrderListService(Node):
         while not self.client_update_dB.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('UpdateDB Service not available, waiting again...')
         self.get_logger().info('UpdateDB Service available, ready to send request.')
-        self.updateDB_client()
 
-    def updateDB_client(self):
-        if not self.client_update_dB:
-            self.get_logger().error('UpdateDB Client not initialized')
+        for robot_name in self.robot_names:
+            self.updateDB_client(robot_name)
+
+    def updateDB_client(self,robot_name):
+        if not self.client:
+            self.get_logger().error('Client not initialized')
             return
         request = UpdateDB.Request()
         # 'UpdateDB' 서비스 Request 메세지 타입: Robot_Name
-        request.robot_name = "Robo2" #"Robo1"                      # 디버깅용
-        future = self.client_update_dB.call_async(request)       
+        request.robot_name = robot_name                     # 디버깅용
+        future = self.client.call_async(request)       
         future.add_done_callback(self.callback_response)  # 응답 콜백 설정
 
     def task_progress_callback(self, msg):                                                                        # new
@@ -104,25 +110,28 @@ class OrderListService(Node):
     def callback_response(self, future):
         try:
             response = future.result()
-            self.get_logger().info(f'Received response: \n{response.robot_name}, {response.status}, {response.estimated_completion_time}, {response.battery_status}')
+            self.get_logger().info(f'Received response: \n{response.robot_name}, {response.status}, {response.battery_status},{response.estimated_completion_time}  ')
+            self.robot_info_list.append(response)
         except Exception as e:
             self.get_logger().error(f'Failed to receive response: {e}')
+            self.robot_info = None
 
     def generate_order_callback(self, request, response):                                                          # new
         random_items = self.order_list_node.get_random_order_list()  # 랜덤 주문 리스트 생성
 
         # 중복 제거를 위해 아이템 ID 리스트를 집합으로 변환 후 다시 리스트로 변환
         order_list = list(set(item.item_id for item in random_items))
-
+        
         # 그룹핑된 아이템 목록 생성
         self.inspection_index = 0  # 초기화 추가
         self.inspection_started = False  # 초기화 추가
         self.current_task_code = None  # 초기화 추가
         self.product_code_list = []  # 초기화 추가
         self.grouped_items = []  # 초기화 추가
-        grouped_items = group_items(order_list)
-        self.get_logger().info(f"{grouped_items}")
 
+        grouped_items = group_items(order_list)
+        
+        print(f"{grouped_items}")
         task_code = 1
 
         for group in grouped_items:
@@ -183,7 +192,7 @@ class OrderListService(Node):
 
     
     def get_items_to_inspect(self):
-        db_connection = get_mysql_connection()      #Connect("root", "0")
+        db_connection = Connect("root", "asdf")
         cursor = db_connection.cursor
         cursor.execute("SELECT COUNT(*) FROM Inbound_Manager WHERE Status = '입하완료'")
         self.total_items_to_inspect = cursor.fetchone()[0]
@@ -206,7 +215,7 @@ class OrderListService(Node):
             self.get_logger().info('No more items to inspect.')
 
     def get_item_from_db(self, item_id):
-        db_connection = get_mysql_connection() #Connect("root", "0")
+        db_connection = Connect("root", "asdf")
         cursor = db_connection.cursor
         cursor.execute("SELECT * FROM Inbound_Manager WHERE Product_Code = %s", (item_id,))
         row = cursor.fetchone()
@@ -237,19 +246,21 @@ class OrderListService(Node):
 
         # 다음 인덱스가 현재 작업 코드와 다를 경우
         if (self.inspection_index < len(self.grouped_items) and self.grouped_items[self.inspection_index][0] != self.current_task_code):
-            self.send_task_allocation_request(self.current_task_code, self.product_code_list, "입고")  # "Task_2", ['P01', 'P05', 'P09'], "입고"
-            self.product_code_list = [] #list초기화
+            self.request_robot_info_and_allocate_task()
+        
 
         # 모든 검수가 완료되었을 경우
         if self.inspected_items_count == self.total_items_to_inspect:
+            self.request_robot_info_and_allocate_task()
             self.get_logger().info('All inspections complete. Sending task allocation requests.')
-            self.send_task_allocation_request(self.current_task_code, self.product_code_list,"입고")
 
         # else:
         self.process_next_item()
+    
 
+        
     def update_status_in_db(self, product_code, status):        
-        db_connection = get_mysql_connection()    #Connect("root", "0")
+        db_connection = Connect("root", "asdf")
         if not db_connection.conn or not db_connection.cursor:
             self.get_logger().error("Failed to connect to the database")
             return
@@ -273,12 +284,31 @@ class OrderListService(Node):
         self.publisher_update_gui.publish(msg)
         self.get_logger().info(f'Sent GUI update signal for product {product_code} with status {status}')
 
+    def request_robot_info_and_allocate_task(self):
+        robot_names = ["Robo1", "Robo2"]  # 모든 로봇 이름 리스트
 
-    def send_task_allocation_request(self,  task_code, product_code_list, task_type):
+        for robot_name in robot_names:
+            self.updateDB_client(robot_name)
+
+        # 모든 로봇 정보를 수집한 후 task allocation 요청
+        self.send_task_allocation_request(self.current_task_code, self.product_code_list, "입고", self.robot_info_list)
+        self.product_code_list = []  # list 초기화
+
+
+    def send_task_allocation_request(self, task_code, product_code_list, task_type, robot_info_list=None):
         request = AllocatorTask.Request()
         request.task_code = f"Task_{task_code}"
         request.product_code_list = product_code_list
         request.task_type = task_type
+
+        # 로봇 정보를 request에 추가
+        if robot_info_list:
+            request.robot_name = [str(robot_info.robot_name) for robot_info in robot_info_list]
+            request.battery_status = [str(robot_info.battery_status) for robot_info in robot_info_list]
+            request.status = [str(robot_info.status) for robot_info in robot_info_list]
+            request.estimated_completion_time = [str(robot_info.estimated_completion_time) for robot_info in robot_info_list]
+
+
         self.future = self.task_allocator_client.call_async(request)
         self.get_logger().info(f'Sending task allocation request for task_code: task_{task_code} with product_code_list: {product_code_list}')
         self.future.add_done_callback(self.handle_task_allocation_response)
@@ -306,10 +336,12 @@ class OrderListService(Node):
         
         self.get_logger().info(f'Published task assignment for robot: {robot_name}')
 
+    
+
 class Connect():
     def __init__(self, User, Password):
         self.conn = con.connect(
-            host='localhost',
+            # host='database-1.cdigc6umyoh0.ap-northeast-2.rds.amazonaws.com',
             user=User,
             password=Password,
             database='DFC_system_db'
@@ -324,7 +356,12 @@ class Connect():
             self.conn = None
 
 # YAML 파일 경로
-yaml_file_path = '/home/edu/dev_ws/git_ws2/ros-repo-4/main_control_server/params/db_user_info.yaml'
+# yaml_file_path = '/home/edu/dev_ws/git_ws2/ros-repo-4/main_control_server/params/db_user_info.yaml'
+
+current_dir = os.path.dirname(os.path.abspath(__file__))
+db_user_info_path = os.path.join(current_dir, "../../../../params/db_user_info.yaml")
+yaml_file_path = os.path.abspath(db_user_info_path)
+
 
 # YAML 파일을 읽어 파라미터를 가져옴
 def load_db_params(file_path):
