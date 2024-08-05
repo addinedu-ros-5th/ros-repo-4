@@ -14,9 +14,9 @@ from ament_index_python.packages import get_package_share_directory
 # YAML 파일 경로
 yaml_file_path = '/home/edu/dev_ws/git_ws2/ros-repo-4/main_control_server/params/db_user_info.yaml'
 
-current_dir = os.path.dirname(os.path.abspath(__file__))
-db_user_info_path = os.path.join(current_dir, "../../../../../params/db_user_info.yaml")
-yaml_file_path = os.path.abspath(db_user_info_path)
+# current_dir = os.path.dirname(os.path.abspath(__file__))
+# db_user_info_path = os.path.join(current_dir, "../../../../../params/db_user_info.yaml")
+# yaml_file_path = os.path.abspath(db_user_info_path)
 
 # YAML 파일을 읽어 파라미터를 가져옴
 def load_db_params(file_path):
