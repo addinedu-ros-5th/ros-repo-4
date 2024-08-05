@@ -21,9 +21,8 @@ class PathServer(Node):
         self.new_goal = False
         
         self.goal_subscription = self.create_subscription(GoalPose, 'target_pose', self.goal_callback, 10)
-        self.pose_subscription = self.create_subscription(PoseWithCovarianceStamped, 'robot_1/amcl_pose', self.pose_callback, 10)
-        
-        self.path_publisher_1 = self.create_publisher(Path, 'robo_1/planned_path', 10)
+        self.pose_subscription = self.create_subscription(PoseWithCovarianceStamped, '/amcl_pose', self.pose_callback, 10)
+        self.path_publisher_1 = self.create_publisher(Path, 'planned_path_1', 10)
         # self.path_publisher_2 = self.create_publisher(Path, 'planned_path_2', 10)
 
         self.path_thread = threading.Thread(target=self.path_processing_thread)
