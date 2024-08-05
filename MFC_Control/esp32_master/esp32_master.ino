@@ -8,25 +8,22 @@
 // const char* ssid = "902";
 // const char* password = "22177070";
 
-<<<<<<< HEAD
 // const char* ssid = "addinedu_class_1(2.4G)";
 // const char* password = "addinedu1";
 
-=======
-// const char* ssid = "Tmwlakfk_>u<";
-// const char* password = "96989898";++
+// const char* ssid = "김미꾜";
+// const char* password = "01033616648";
 
-const char* ssid = "addinedu_class_1(2.4G)";
-const char* password = "addinedu1";
->>>>>>> 07b9818d4ac797aa0a4b0603716d9c00cfa10a66
 // const char* ssid = "CLL5G";
 // const char* password = "cll16661140";
-// const char* ssid = "SK_WiFiGIGA624C_2.4G";
-// const char* password = "1702061400";
 
 
-const char* ssid = "Tmwlakfk_>u<";
-const char* password = "96989898";
+// const char* ssid = "Tmwlakfk_>u<";
+// const char* password = "96989898";
+
+const char* ssid = "FOREST_GB_2G";
+const char* password = "forest1234";
+
 
 #define SLAVE1_ADDR 0x08
 #define SLAVE2_ADDR 0x09
@@ -38,18 +35,19 @@ const long interval = 1000; // 1초 간격
 
 // String MFCNetworkManagerIP = "172.30.1.28"; // network_manager IP 주소 탐탐
 // String MFCNetworkManagerIP = "192.168.0.15"; // network_manager IP 주소 쬰지네
-<<<<<<< HEAD
-// String MFCNetworkManagerIP = "192.168.2.28"; // network_manager IP 주소 학원
-String MFCNetworkManagerIP = "192.168.1.104"; // network_manager IP 주소 학원
-=======
-// String MFCNetworkManagerIP = "192.168.1.102"; // network_manager IP 주소 팀 공유기
-String MFCNetworkManagerIP = "192.168.2.17";
->>>>>>> 07b9818d4ac797aa0a4b0603716d9c00cfa10a66
+// String MFCNetworkManagerIP = "192.168.2.28"; // network_manager IP 주소 학원172.20.10.8
+
+// String MFCNetworkManagerIP = "172.20.10.8"; // network_manager IP 주소 학원
+// String MFCNetworkManagerIP = "192.168.1.104"; // network_manager IP 주소 학원>3<
+
+String MFCNetworkManagerIP = "192.168.0.11"; // network_manager IP 주소 학원>3<
 const uint16_t networkManagerPort = 12345;
 
 
 // String slave3IP = "192.168.2.84"; // 슬레이브 3 IP 주소(ESP32 RACK LED) 학원
-String slave3IP = "192.168.1.106"; // 슬레이브 3 IP 주소(ESP32 RACK LED) >ㅁ<
+// String slave3IP = "192.168.1.105"; // 슬레이브 3 IP 주소(ESP32 RACK LED) >ㅁ<
+
+String slave3IP = "192.168.0.15"; // 슬레이브 3 IP 주소(ESP32 RACK LED)개방
 const uint16_t slave3Port = 80; // 슬레이브 보드의 서버 포트
 
 void setup() {
@@ -112,6 +110,7 @@ void handleClientRequest() {
             String rackList = request.substring(firstSeparator + 1, secondSeparator);
             rackList.trim();
             Serial.println("Received rack list: " + rackList);
+            rackList.replace("'", ""); // 따옴표 제거
             sendCommandToSlave(slave3IP, rackList);
 
             client.println("Inspection started for racks: " + rackList);
@@ -121,6 +120,34 @@ void handleClientRequest() {
     }
     client.stop();
     Serial.println("Client disconnected");
+  }
+}
+void sendCommandToSlave(String slaveIP, String rackList) {
+  WiFiClient client;
+  if (client.connect(slaveIP.c_str(), slave3Port)) {
+    // 랙 리스트를 ','로 분할하여 각각에 "I,S"를 추가하여 전송
+    int start = 0;
+    int end = rackList.indexOf(',');
+    while (end != -1) {
+      String rack = rackList.substring(start, end);
+      rack.trim();
+      String command = rack + ",I,S";
+      client.println(command);
+      Serial.println("Sent command to slave: " + command);
+      start = end + 1;
+      end = rackList.indexOf(',', start);
+    }
+    // 마지막 랙 처리
+    String rack = rackList.substring(start);
+    rack.trim();
+    String command = rack + ",I,S";
+    client.println(command);
+    Serial.println("Sent command to slave: " + command);
+
+    delay(1000); // 모든 명령이 전송될 때까지 기다림
+    client.stop();
+  } else {
+    Serial.println("Connection to slave failed: " + slaveIP);
   }
 }
 
@@ -140,16 +167,6 @@ void sendCommandToArduino(uint8_t address, String command) {
   Wire.endTransmission();
 }
 
-void sendCommandToSlave(String slaveIP, String command) {
-  WiFiClient client;
-  if (client.connect(slaveIP.c_str(), slave3Port)) {
-    client.println(command);
-    client.stop();
-    Serial.println("Sent command to slave: " + slaveIP + " Command: " + command);
-  } else {
-    Serial.println("Connection to slave failed: " + slaveIP);
-  }
-}
 void requestInspectionComplete(uint8_t address) {
   Wire.requestFrom(address, 33); // null terminator 포함 33 바이트의 데이터를 요청 (예: 최대 메시지 길이)
   char response[33] = {0}; // 버퍼 초기화
