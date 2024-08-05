@@ -1,20 +1,16 @@
 import random
-
 # 품목 클래스
 class Item:
     def __init__(self, item_id, name, quantity):
         self.item_id = item_id
         self.name = name
         self.quantity = quantity
-
     def __repr__(self):
         return f"Item({self.item_id}, {self.name}, {self.quantity})"
-
 # OrderListNode 클래스
 class OrderList:
     def __init__(self):
         self.items = self.initialize_items()
-
     def initialize_items(self):
         # 18개의 품목 초기화
         items = [
@@ -38,24 +34,16 @@ class OrderList:
             Item('P18', "Basketball", random.randint(1, 100))
         ]
         return items
-
     def get_random_order_list(self):
-<<<<<<< HEAD
-        # 10~18개의 랜덤 품목 선택
-        num_items = random.randint(1, 3)
-=======
-        # 10~18개의 랜덤 품목 선택8134610] [tf_help]: Transform data too old when converting from map to 
+        # 10~18개의 랜덤 품목 선택8134610] [tf_help]: Transform data too old when converting from map to
         num_items = random.randint(3, 4)
->>>>>>> a4475bde205610f879fc268b10453883c5d566d8
         random_items = random.sample(self.items, num_items)
         # 선택된 품목의 수량도 랜덤으로 설정
         for item in random_items:
             item.quantity = random.randint(1, 50)
         return random_items
-
     def print_order_list(self, order_list):
         for item in order_list:
             print(f"Item ID: {item.item_id}, Name: {item.name}, Quantity: {item.quantity}")
         print(f"Total items: {len(order_list)}")  # 출력된 항목의 개수를 출력
-
 
