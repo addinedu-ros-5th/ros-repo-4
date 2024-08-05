@@ -8,7 +8,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
-# find_package(robot_state REQUIRED)        # new
+# find_package(robot_state REQUIRED)                    # new
 
 # Add the service files
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -19,6 +19,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/InspectionComplete.msg"
   "msg/GuiUpdate.msg"
   "msg/SendAllocationResults.msg"
+  "msg/SendLightOnResults.msg"                         # new
 )
 install(
   DIRECTORY launch

@@ -4,19 +4,19 @@ import rclpy
 from rclpy.node import Node
 
 from task_manager.msg import DbUpdate, GuiUpdate
-from task_manager.msg import StartInspection, InspectionComplete, SendAllocationResults
+from task_manager.msg import StartInspection, InspectionComplete, SendAllocationResults, SendLightOnResults
 from task_manager.srv import GenerateOrder, AllocatorTask
 from modules.order_grouping import group_items
 from modules.order_list import OrderList  
 from robot_state.srv import UpdateDB
+# Robot Task Client 로부터 오는 메세지 타입
 from robot_state.msg import TaskProgressUpdate
-
 import mysql.connector as con
 
 class OrderListService(Node):
     def __init__(self):
-
         super().__init__('order_list_service')
+
         # 'GenerateOrder' 메세지 타입의 서비스 서버
         self.srv = self.create_service(GenerateOrder, 'generate_order', self.generate_order_callback)
         self.order_list_node = OrderList()
@@ -29,8 +29,6 @@ class OrderListService(Node):
         self.current_task_code = None # 현재 그룹의 task_code를 저장할 변수 추가
         self.product_code_list = []  # 현재 그룹의 product_code 리스트를 저장할 변수 추가
 
-
-
         # list gui가 db에 저장완료했다고 신호받고 첫행 꺼내오기
         self.subscription = self.create_subscription(
             DbUpdate,
@@ -41,6 +39,10 @@ class OrderListService(Node):
 
         # 'StartInspection' 메세지 타입의 publisher
         self.publisher_start_inspection = self.create_publisher(StartInspection, 'mfc_start_inspection', 10)
+        # 'SendLightOnResults' 메세지 타입의 publisher
+        self.publisher_light_on_results = self.create_publisher(SendLightOnResults, 'send_light_on_results', 10)             
+        # 'GuiUpdate' 메세지 타입의 publisher
+        self.publisher_update_gui = self.create_publisher(GuiUpdate, 'gui_update', 10)                          # new
 
         # 'InspectionComplete' 메세지 타입의 subscriber
         self.subscription_inspection_complete = self.create_subscription(
@@ -48,18 +50,15 @@ class OrderListService(Node):
             'inspection_complete',
             self.inspection_complete_callback,
             10)
-        
+        self.subscription_inspection_complete
         # 'TaskProgressUpdate' 메세지 타입의 subscriber
-        self.subscription_task_progress_update = self.create_subscription(                  # new
+        self.subscription_task_progress_update = self.create_subscription(                                      # new
             TaskProgressUpdate,
             'send_task_complete_results',
             self.task_progress_callback,
             10
             )
-        self.subscription_task_progress_update                                              # new
-
-        # 'GuiUpdate' 메세지 타입의 publisher
-        self.publisher_update_gui = self.create_publisher(GuiUpdate, 'gui_update', 10)        
+        self.subscription_task_progress_update                                                                   # new
 
         # 'AllocatorTask' 메세지 타입의 서비스 클라이언트 
         self.task_allocator_client = self.create_client(AllocatorTask, 'allocate_task')
@@ -71,58 +70,69 @@ class OrderListService(Node):
         self.publisher_allocation_results = self.create_publisher(SendAllocationResults, 'send_allocation_results', 10)
 
         # 'UpdateDB' 서비스 타입의 클라이언트
-        self.client = self.create_client(UpdateDB, 'update_db')
-        while not self.client.wait_for_service(timeout_sec=1.0):
+        self.client_update_dB = self.create_client(UpdateDB, 'update_db')
+        while not self.client_update_dB.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('UpdateDB Service not available, waiting again...')
         self.get_logger().info('UpdateDB Service available, ready to send request.')
-
         self.updateDB_client()
 
     def updateDB_client(self):
-        if not self.client:
-            self.get_logger().error('Client not initialized')
+        if not self.client_update_dB:
+            self.get_logger().error('UpdateDB Client not initialized')
             return
-    
         request = UpdateDB.Request()
-
         # 'UpdateDB' 서비스 Request 메세지 타입: Robot_Name
-        request.robot_name = "Robo1"                      # 디버깅용
-        future = self.client.call_async(request)       
+        request.robot_name = "Robo2" #"Robo1"                      # 디버깅용
+        future = self.client_update_dB.call_async(request)       
         future.add_done_callback(self.callback_response)  # 응답 콜백 설정
 
-    def task_progress_callback(self, msg):                                                  # new
+    def task_progress_callback(self, msg):                                                                        # new
         self.get_logger().info(f'Received task progress from robot_state_manager: {msg.robot_name}')                       
         self.get_logger().info(f'Current Rack: {msg.current_rack}')                                                   
         self.get_logger().info(f'Task Complete: {msg.task_complete}')
         self.get_logger().info(f'****************************************************')
-        ########################## 여기서 estimated_completion_time 업데이트? ##########################
+        
+        self.send_light_on_results(msg.current_rack, msg.task_complete)
+
+    def send_light_on_results(self, current_rack, task_complete):                                                 # new
+        light_on_msg =  SendLightOnResults()
+        light_on_msg.current_rack = current_rack
+        light_on_msg.task_complete = task_complete
+        
+        self.publisher_light_on_results.publish(light_on_msg)
 
     def callback_response(self, future):
         try:
             response = future.result()
-            self.get_logger().info(f'Received response: \n{response.robot_name}, {response.status}, {response.battery_status} ')
+            self.get_logger().info(f'Received response: \n{response.robot_name}, {response.status}, {response.estimated_completion_time}, {response.battery_status}')
         except Exception as e:
             self.get_logger().error(f'Failed to receive response: {e}')
 
-    def generate_order_callback(self, request, response):
+    def generate_order_callback(self, request, response):                                                          # new
         random_items = self.order_list_node.get_random_order_list()  # 랜덤 주문 리스트 생성
 
-        # 아이템 ID 리스트 생성
-        order_list = [item.item_id for item in random_items]
+        # 중복 제거를 위해 아이템 ID 리스트를 집합으로 변환 후 다시 리스트로 변환
+        order_list = list(set(item.item_id for item in random_items))
 
         # 그룹핑된 아이템 목록 생성
+        self.inspection_index = 0  # 초기화 추가
+        self.inspection_started = False  # 초기화 추가
+        self.current_task_code = None  # 초기화 추가
+        self.product_code_list = []  # 초기화 추가
+        self.grouped_items = []  # 초기화 추가
         grouped_items = group_items(order_list)
+        self.get_logger().info(f"{grouped_items}")
 
         task_code = 1
+
         for group in grouped_items:
             for product_code in group:
-                self.grouped_items.append((task_code,product_code))
+                self.grouped_items.append((task_code, product_code))
             task_code += 1
 
         # 그룹핑된 아이템 목록 출력 (디버깅용)
         for i, (task,item) in enumerate(self.grouped_items):
-            print(f"Task_{task}: {item}")
-
+            self.get_logger().info(f"Task_{task}: {item}")
         product_to_location = {
             "P01": "R_A1", "P02": "R_A2", "P03": "R_A3",
             "P04": "R_B1", "P05": "R_B2", "P06": "R_B3",
@@ -139,11 +149,10 @@ class OrderListService(Node):
         for item in random_items:
             location = product_to_location.get(item.item_id, "R_A1")  # 기본값으로 "R_A1" 설정
             warehouse, rack, cell = location.split("_")[1][0], location.split("_")[1], location.split("_")[1][1]
-            
             warehouses.append(f"{warehouse}구역")
             racks.append(rack)
             cells.append(cell)
-        
+
         response.item_ids = [str(item.item_id) for item in random_items]
         response.names = [item.name for item in random_items]
         response.quantities = [item.quantity for item in random_items]
@@ -151,10 +160,9 @@ class OrderListService(Node):
         response.racks = racks
         response.cells = cells
         response.statuses = ["입하완료" for _ in random_items]  # 임의로 Status 설정
-        
         # self.get_logger().info(f'Received request: {request}')
         # self.get_logger().info(f'Sending response: {response}')
-   
+
         return response
 
     def db_update_callback(self, msg):
@@ -229,7 +237,7 @@ class OrderListService(Node):
 
         # 다음 인덱스가 현재 작업 코드와 다를 경우
         if (self.inspection_index < len(self.grouped_items) and self.grouped_items[self.inspection_index][0] != self.current_task_code):
-            self.send_task_allocation_request(self.current_task_code, self.product_code_list,"입고")  # "Task_2", ['P01', 'P05', 'P09'], "입고"
+            self.send_task_allocation_request(self.current_task_code, self.product_code_list, "입고")  # "Task_2", ['P01', 'P05', 'P09'], "입고"
             self.product_code_list = [] #list초기화
 
         # 모든 검수가 완료되었을 경우
@@ -240,8 +248,6 @@ class OrderListService(Node):
         # else:
         self.process_next_item()
 
-
-        
     def update_status_in_db(self, product_code, status):        
         db_connection = get_mysql_connection()    #Connect("root", "0")
         if not db_connection.conn or not db_connection.cursor:
@@ -268,7 +274,7 @@ class OrderListService(Node):
         self.get_logger().info(f'Sent GUI update signal for product {product_code} with status {status}')
 
 
-    def send_task_allocation_request(self,  task_code, product_code_list,task_type):
+    def send_task_allocation_request(self,  task_code, product_code_list, task_type):
         request = AllocatorTask.Request()
         request.task_code = f"Task_{task_code}"
         request.product_code_list = product_code_list

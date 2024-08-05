@@ -11,8 +11,8 @@ class AmclSubscriber(Node):
         self.pose1_sub = self.create_subscription(PoseWithCovarianceStamped, 'amcl_pose', self.amcl_callback1, 10)
 
     def amcl_callback1(self, msg):
-        print("Received AMCL Pose in RobotStateWindow:", msg)        
-        print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+        self.get_logger().info("Received AMCL Pose in RobotStateWindow:", msg)        
+        self.get_logger().info('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
         self.amcl = msg
 
     def get_amcl_pose(self):

@@ -40,7 +40,7 @@ class OrderList:
         return items
 
     def get_random_order_list(self):
-        # 10~18개의 랜덤 품목 선택8134610] [tf_help]: Transform data too old when converting from map to 
+        # 10~18개의 랜덤 품목 선택
         num_items = random.randint(1, 3)
         random_items = random.sample(self.items, num_items)
         # 선택된 품목의 수량도 랜덤으로 설정

@@ -5,14 +5,17 @@
 
 // const char* ssid = "TOM N TOMS 2G";
 
-// const char* ssid = "902";
-// const char* password = "22177070";
+// const char* ssid = "SK_WiFiGIGA9B3A_2.4G";
+// const char* password = "AGI0D@1515";
 
-const char* ssid = "Tmwlakfk_>u<";
-const char* password = "96989898";
+// const char* ssid = "Tmwlakfk_>u<";
+// const char* password = "96989898";
 
-// const char* ssid = "CLL5G";
-// const char* password = "cll16661140";
+// const char* ssid = "addinedu_class_1(2.4G)";
+// const char* password = "addinedu1";
+
+const char* ssid = "채희곤의 iPhone";
+const char* password = "c83jvwatz!";
 
 #define SLAVE1_ADDR 0x08
 #define SLAVE2_ADDR 0x09
@@ -22,9 +25,12 @@ WiFiServer server(80); // TCP 서버 포트 설정
 unsigned long previousMillis = 0; // 이전 시간 저장
 const long interval = 1000; // 1초 간격
 
-// String MFCNetworkManagerIP = "172.30.1.28"; // network_manager IP 주소 탐탐
-// String MFCNetworkManagerIP = "192.168.0.15"; // network_manager IP 주소 쬰지네
-String MFCNetworkManagerIP = "192.168.1.102"; // network_manager IP 주소 팀 공유기
+//String MFCNetworkManagerIP = "172.30.1.28"; // network_manager IP 주소 탐탐
+//String MFCNetworkManagerIP = "192.168.0.15"; // network_manager IP 주소 쬰지네
+//String MFCNetworkManagerIP = "192.168.1.102"; // network_manager IP 주소 팀 공유기
+//String MFCNetworkManagerIP = "192.168.45.124"; // network_manager IP 주소 희곤네
+String MFCNetworkManagerIP = "172.20.10.2"; // network_manager IP 주소 희곤 핫스팟
+
 const uint16_t networkManagerPort = 12345;
 
 void setup() {

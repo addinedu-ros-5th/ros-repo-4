@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import os
+import re
 import yaml
 import threading
 import queue
@@ -18,7 +19,9 @@ from robot_state.srv import UpdateDB
 # Task Manager로부터 오는 메세지 타입
 from task_manager.msg import SendAllocationResults
 # Robot Task Client으로부터 오는 메세지 타입
-from std_msgs.msg import String
+from robot_state.msg import AllTaskDone     
+# RackList 메시지 타입
+from robot_state.msg import RackList
 
 # YAML 파일 경로
 yaml_file_path = '/home/edu/dev_ws/git_ws2/ros-repo-4/main_control_server/params/db_user_info.yaml'
@@ -37,11 +40,16 @@ def get_mysql_connection():
     except con.Error as err:
         print(f"Error: {err}")
         return None    
-    
+
 class UpdateRobotState():
     def __init__(self, db_instance):
         self.cursor = db_instance.cursor
+        self.conn = db_instance.conn
 
+        if not self.conn or not self.cursor:
+            self.get_logger().error("Failed to connect to the database")
+            return
+    
     # 데이터베이스에서 테이블 정보를 가져오는 함수 정의
     def fetchDataQuery(self, query):
         self.cursor.execute(query)
@@ -50,7 +58,11 @@ class UpdateRobotState():
     def loadDataFromDB(self, query):
         robot_data = self.fetchDataQuery(query)
         return robot_data
-
+    
+    def updateData(self, query):
+        self.cursor.execute(query)
+        self.conn.commit()
+            
 ## Version 1.
 Robot_Name = "Debugging"
 Rack_List = ["Debugging", "Debugging", "Debugging"]
@@ -72,14 +84,37 @@ class MFCRobotManager(Node):
             'send_allocation_results',
             self.task_assignment_callback,
             10)
+        self.allocation_results_sub
+
+        # 'AllTaskDone' 메세지 타입의 subscriber
+        self.all_task_done_sub = self.create_subscription(                                  # new 0805
+            AllTaskDone,
+            'send_all_task_done_results',
+            self.all_task_done_callback,
+            10
+            )
+        self.all_task_done_sub    
+
+    def all_task_done_callback(self, msg):                                                  # new 0801
+        global Robot_Name
+        global Rack_List
+        global Task_Assignment
         
-        # # 'String' 메세지 타입 subscriber 
-        # self.task_completes_results_sub = self.create_subscription(
-        #     String,
-        #     'result_topic',
-        #     self.task_complete_callback,
-        #     10)
-        
+        if (msg.result_msg == "All done"):
+            rack_list_str = str(Rack_List).replace('[', '').replace(']', '').replace("'", "")  
+            ############################# 여기에 'Status' 열 == 작업중 ->  대기중 필요 #############################
+            query = f"""
+                    update Robot_manager 
+                    set Status = '대기중' 
+                    where Robot_Name = '{Robot_Name}' 
+                            AND Rack_List = '{rack_list_str}' 
+                            AND Status = '작업중' 
+                            AND Task_Assignment = '{Task_Assignment}';
+                    """
+            self.update_robot_state.updateData(query)
+        else:
+            self.get_logger().info("작업중...")
+    
     def update_db_callback(self, request, response):
         # 디버깅용
         print(f"Request : , \n{request}")                                                                      # 4번 출력
@@ -90,17 +125,19 @@ class MFCRobotManager(Node):
 
         # timestamp 기준으로 각 로봇 최신 상태 대한 query문  
         if robot_name == "Robo1":    
-            query = f"SELECT Robot_Name, Status, Battery_Status FROM Robot_manager WHERE Robot_Name = '{robot_name}' ORDER BY Time DESC LIMIT 1;"
+            query = f"SELECT Robot_Name, Status, Estimated_Completion_Time, Battery_Status FROM Robot_manager WHERE Robot_Name = '{robot_name}' ORDER BY Time DESC LIMIT 1;"
         else:
-            query = f"SELECT Robot_Name, Status, Battery_Status FROM Robot_manager WHERE Robot_Name = '{robot_name}' ORDER BY Time DESC LIMIT 1;"
+            query = f"SELECT Robot_Name, Status, Estimated_Completion_Time, Battery_Status FROM Robot_manager WHERE Robot_Name = '{robot_name}' ORDER BY Time DESC LIMIT 1;"
         
         robot_data = self.update_robot_state.loadDataFromDB(query)
-        self.db_instance.disConnection()
 
+        self.get_logger().info(f'{robot_data}')
+        
         response.robot_name = robot_data[0][0]
         response.status = robot_data[0][1]
-        response.battery_status = robot_data[0][2]
-   
+        response.estimated_completion_time = robot_data[0][2]          # new 
+        response.battery_status = robot_data[0][3]
+
         return response
 
     def task_assignment_callback(self, msg):
@@ -115,16 +152,36 @@ class MFCRobotManager(Node):
         self.get_logger().info(f'Rack List: {msg.rack_list}')
         self.get_logger().info(f'Task Assignment: {msg.task_assignment}')
         ##############################여기 아래에 robot_name & goal_location 전달##############################
-        
         isTaskAssigned = True
         Robot_Name = msg.robot_name
         Task_Code = msg.task_code
         Rack_List = msg.rack_list
         Task_Assignment = msg.task_assignment
-        
-        print(f"It is in MFCRobotManager")                                              # 2번 출력
-        print(Robot_Name, Task_Code, Rack_List, Task_Assignment)                        
+
+        estimated_completion_time = len(Rack_List)
+        print(estimated_completion_time)
         print('################################################################')
+        rack_list_str = str(Rack_List).replace('[', '').replace(']', '').replace("'", "")  # Format Rack_List correctly
+        ######## 여기서 Robot_manager 테이블에 등록하기  ########
+        query = f"""
+            UPDATE Robot_manager
+            SET
+                IFNULL(MAX(Num), 0) + 1,
+                Location_X = 0.0,
+                Location_Y = 0.0,
+                Rack_List = '{rack_list_str}',
+                Status = '작업중',
+                Estimated_Completion_Time = {float(estimated_completion_time)},
+                Battery_Status = IFNULL((SELECT Battery_Status FROM (SELECT * FROM Robot_manager) AS subquery ORDER BY Num DESC LIMIT 1), '100%'),
+                Task_Assignment = '{Task_Assignment}',
+                Error_Codes = 'None',
+                Time = NOW()
+            WHERE
+                Robot_Name = '{Robot_Name}';
+        """
+        self.update_robot_state.updateData(query)
+        print("Succeeding to insert in Robot_manager")
+        ####################################################
 
 def main(args=None):
     global Robot_Name
@@ -151,10 +208,11 @@ def main(args=None):
                 print("Update 후")                                                         # 3번 출력
                 print(Robot_Name, Task_Code, Rack_List, Task_Assignment)                   # 5번 출력
                 print('################################################################')  
-
+                
                 node2.receive_goal_list(Robot_Name, Rack_List, Task_Assignment)            # 6번 출력
                 isTaskAssigned = False              # Send goal only once
     finally:
+        node1.update_robot_state.conn.close()  # 프로그램 종료 시 연결 닫기
         executor.shutdown()
         node1.destroy_node()
         node2.destroy_node()

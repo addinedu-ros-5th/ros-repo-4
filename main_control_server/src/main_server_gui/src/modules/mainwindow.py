@@ -28,19 +28,20 @@ def get_mysql_connection():
         return None    
         
 class MainWindow(QtWidgets.QMainWindow):
+    #----------------------------------- Inbound 관련 Signal(출처: Class InboundNode(Node) ) -----------------------------------
     # Signal 정의 로스노드로부터 데이터를 받아야해요~
-    inbound_list_signal = pyqtSignal(list)
-    
+    inbound_list_signal = pyqtSignal(list)                  # self.get_logger().info(f'Parsed outbound_list list: {outbound_list}')
     #8시 알려라~ node에~
     schedule_signal = pyqtSignal()  # 8시가 되었음을 알리는 신호
-
-
-    db_update_signal = pyqtSignal(str)  # DB 업데이트 완료요~(task_manager한테 알려줄 용도)
+    
+    # DB 업데이트 완료요~(task_manager한테 알려줄 용도)
+    db_update_signal = pyqtSignal(str) 
     inbound_status_db_update_signal = pyqtSignal()
 
     def __init__(self, username=''):
         super(MainWindow, self).__init__()
         self.inbound_management_active = False
+        self.outbound_management_active = False
 
         ui_file = os.path.join(get_package_share_directory('main_server_gui'), 'ui', 'window2.ui')
         uic.loadUi(ui_file, self)
@@ -65,9 +66,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.robot_state_window = None
 
         # Signal 연결
+        #----------------------------------- Inbound 관련 Signal -----------------------------------
         self.inbound_list_signal.connect(self.display_inbound_list)
         self.inbound_status_db_update_signal.connect(self.show_inbound_management)
-       
+
     def toggleClock(self):
         if self.startButton.text() == 'Start':
             self.startClock()
@@ -94,7 +96,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if current_time.hour() == 8 and current_time.minute() == 0:
             self.schedule_signal.emit()  # 8시가 되었음!! 로스에 전달!!
 
-
+    #----------------------------------- Inbound 관련 매써드 -----------------------------------
     def display_inbound_list(self, inbound_list):
         self.update_inbound_list(inbound_list)
         if self.inbound_management_active:
@@ -105,7 +107,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if db_instance:
             try:
                 db_instance.cursor.execute("SET FOREIGN_KEY_CHECKS=0")
-                db_instance.cursor.execute("DELETE FROM Inbound_Manager")
+                db_instance.cursor.execute("DELETE FROM Inbound_Manager")    # 여기서 DB 테이블 삭제
                 db_instance.cursor.execute("SET FOREIGN_KEY_CHECKS=1")
                 for idx, item in enumerate(inbound_list, start=1):
                     insert_query = ("INSERT INTO Inbound_Manager (No, Product_Code, Product_Name, Warehouse, Rack, Cell, Receiving_Quantity, Status) "
@@ -119,7 +121,6 @@ class MainWindow(QtWidgets.QMainWindow):
             except con.Error as err:
                 print(f"Error: {err}")
                 db_instance.disConnection()
-    
 
     def handle_tree_item_click(self, item, column):
         if not self.username:
@@ -205,19 +206,6 @@ class MainWindow(QtWidgets.QMainWindow):
             return 'Outbound_manager'
         return None
 
-    def fetch_inbound_table_data(self):
-        db_instance = get_mysql_connection()
-        if db_instance:
-            try:
-                db_instance.cursor.execute("SELECT * FROM Inbound_Manager")
-                data = db_instance.cursor.fetchall()
-                db_instance.disConnection()
-                return data
-            except con.Error as err:
-                print(f"Error: {err}")
-                db_instance.disConnection()
-                return None
-
     def populate_table_widget(self, data, table_name):
         self.tableWidget.setRowCount(0)
         self.tableWidget.setColumnCount(0)
@@ -253,7 +241,8 @@ class MainWindow(QtWidgets.QMainWindow):
         if not self.username:
             QtWidgets.QMessageBox.warning(self, 'Error', '로그인 후에 진행해 주세요.')
             return
-
+        
+    #----------------------------------- Inbound 관련 매써드 -----------------------------------
     def show_inbound_management(self):
         if not self.username:
             QtWidgets.QMessageBox.warning(self, 'Error', '로그인 후에 진행해 주세요.')
@@ -264,16 +253,19 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             QtWidgets.QMessageBox.warning(self, 'Error', 'No data found in Inbound_Manager')
 
-    def show_outbound_management(self):
-        if not self.username:
-            QtWidgets.QMessageBox.warning(self, 'Error', '로그인 후에 진행해 주세요.')
-            return
-        data = self.fetch_outbound_table_data()
-        if data:
-            self.populate_table_widget(data, 'Outbound_manager')
-        else:
-            QtWidgets.QMessageBox.warning(self, 'Error', 'No data found in Outbound_manager')
-
+    def fetch_inbound_table_data(self):
+        db_instance = get_mysql_connection()
+        if db_instance:
+            try:
+                db_instance.cursor.execute("SELECT * FROM Inbound_Manager")
+                data = db_instance.cursor.fetchall()
+                db_instance.disConnection()
+                return data
+            except con.Error as err:
+                print(f"Error: {err}")
+                db_instance.disConnection()
+                return None
+            
     def show_robotstate_management(self):
         if self.robot_state_window is None:
             self.robot_state_window = RobotStateWindow(self)
