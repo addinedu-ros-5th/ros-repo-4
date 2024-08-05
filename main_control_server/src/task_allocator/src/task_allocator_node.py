@@ -7,8 +7,6 @@ from data.location_data import pose_dict, inbound_locations, outbound_locations,
 from module.TSP_Algorithms import *
 import json
 
-## Version 1. 수정 후 버전
-# ---------------------------------------------------------------------------------------------------------------
 class TaskAllocator(Node):
     def __init__(self):
         super().__init__('task_allocator')
@@ -27,8 +25,11 @@ class TaskAllocator(Node):
             robots[request.robot_name[i]] = {
                 'battery_level': int(request.battery_status[i].replace('%', '')),
                 'status': request.status[i],
-                'total_workload': int(float(request.estimated_completion_time[i].split(',')[0]))
+                'total_workload': int(float(request.estimated_completion_time[i].split(',')[0])) if request.estimated_completion_time[i] else 0
+
             }
+        
+        rack_list = [product_to_location[product_code] for product_code in product_code_list]
         
         tasks = {task_code: product_code_list}
         task_allocations = auction_based_task_allocation(tasks, robots)
@@ -43,10 +44,10 @@ class TaskAllocator(Node):
         allocation = task_allocations[0]  # 요청이 하나일 것이므로 첫 번째 할당만 사용~~
         response.robot_name = allocation['robot_name']
         response.task_code = allocation['task_code']
-        response.rack_list = allocation['rack_list']
+        response.rack_list = rack_list
         response.task_assignment = request.task_type
 
-        self.get_logger().info(f'Assigned task {task_code} to {allocation["robot_name"]} with racks {allocation["rack_list"]}')
+        self.get_logger().info(f'Assigned task {task_code} to {allocation["robot_name"]} with racks {rack_list}')
         return response
 
 def main(args=None):
