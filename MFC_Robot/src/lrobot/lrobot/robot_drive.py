@@ -7,17 +7,6 @@ from rclpy.node import Node
 from nav_msgs.msg import Path
 from nav_msgs.msg import Path
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
-<<<<<<< HEAD
-from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped
-from rclpy.executors import SingleThreadedExecutor
-from minibot_interfaces.msg import GoalPose
-from std_msgs.msg import String
-# class RobotState(Enum):
-#     STOP = 1
-#     MOVING = 2
-#     ADJUSTING = 3
-#     OBSTACLE = 4
-=======
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped, Twist
 from rclpy.executors import MultiThreadedExecutor
 from std_msgs.msg import String
@@ -35,19 +24,11 @@ class RobotState(Enum):
     GO_HOME = 5
     # TASK_DONE = 6
 
->>>>>>> 73c6729e7db37a2fe0a62979519d36fb780bb70e
 
 class PathFollower(Node):
     def __init__(self):
         super().__init__('mfc_robot')
 
-<<<<<<< HEAD
-        self.subscription = self.create_subscription(Path, 'robo_1/planned_path', self.path_callback, 10)
-        self.goal_subscription = self.create_subscription(GoalPose, 'target_pose', self.goal_callback, 10)
-        self.initial_pose_publisher = self.create_publisher(PoseWithCovarianceStamped, 'initialpose', 10)
-        self.amcl_subscription = self.create_subscription(PoseWithCovarianceStamped, 'robo_1/amcl_pose', self.amcl_callback, 10)
-        self.arrive_goal_publisher = self.create_publisher(String, 'robo_1/adjust_topic', 10)
-=======
         # QoS 설정
         qos_profile = QoSProfile(
             history=QoSHistoryPolicy.KEEP_LAST,
@@ -65,7 +46,6 @@ class PathFollower(Node):
         self.status_publisher = self.create_publisher(String, 'goal_status', 10) 
         self.robot_state_publisher = self.create_publisher(String, 'robo_2/robot_state', 10) 
         self.cmd_vel_publisher = self.create_publisher(Twist, 'cmd_vel', 10)
->>>>>>> 73c6729e7db37a2fe0a62979519d36fb780bb70e
 
         self.nav = BasicNavigator()
         self.nav.waitUntilNav2Active()
@@ -189,15 +169,8 @@ class PathFollower(Node):
 
         result = self.nav.getResult()
         if result == TaskResult.SUCCEEDED:
-<<<<<<< HEAD
-            self.get_logger().info("Successfully followed all waypoints!")
-            adjust_msg = String()
-            adjust_msg.data = "ADJUSTING"
-            self.arrive_goal_publisher.publish(adjust_msg)
-=======
             self.set_state(RobotState.ADJUSTING)
             self.adjustment_complete_callback()
->>>>>>> 73c6729e7db37a2fe0a62979519d36fb780bb70e
         else:
             self.set_state(RobotState.ADJUSTING)
     
