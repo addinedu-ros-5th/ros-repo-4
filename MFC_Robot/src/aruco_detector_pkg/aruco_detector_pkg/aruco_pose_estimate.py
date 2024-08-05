@@ -14,13 +14,10 @@ class ArucoCmdVelPublisher(Node):
     def __init__(self):
         super().__init__('aruco_cmd_vel_publisher')
         self.get_logger().info('ArucoCmdVelPublisher 노드가 시작되었습니다.')
-        self.get_logger().info('ArucoCmdVelPublisher 노드가 시작되었습니다.')
 
         self.bridge = CvBridge()
         self.marker_size = 3.0  # 센티미터 단위
         self.angle_aligned = False  # 각도 조정 완료 여부
-        self.result_state = "STOPPED"  # 초기 상태
-        self.last_stationary_time = None  # 마지막으로 정지한 시간 초기화
         self.result_state = "STOPPED"  # 초기 상태
         self.last_stationary_time = None  # 마지막으로 정지한 시간 초기화
 
@@ -38,7 +35,6 @@ class ArucoCmdVelPublisher(Node):
             self.detector = cv.aruco.ArucoDetector(self.dictionary, self.parameters)
 
             # cmd_vel 퍼블리셔
-            self.cmd_vel_publisher = self.create_publisher(Twist, 'base_controller/cmd_vel_unstamped', 10)
             self.cmd_vel_publisher = self.create_publisher(Twist, 'base_controller/cmd_vel_unstamped', 10)
 
             # result_topic을 subscribe
@@ -129,7 +125,6 @@ class ArucoCmdVelPublisher(Node):
                             self.cmd_vel_publisher.publish(twist)
                         else:
                             # 마커와의 거리가 20cm보다 크면 전진, 작으면 후진
-                            # 마커와의 거리가 20cm보다 크면 전진, 작으면 후진
                             distance = np.sqrt(tVec[0][0]**2 + tVec[1][0]**2 + tVec[2][0]**2)
                             if distance > 20:
                                 twist.linear.x = 0.1
@@ -142,13 +137,11 @@ class ArucoCmdVelPublisher(Node):
                                 twist.angular.z = 0.0
                                 self.angle_aligned = False
                                 self.last_stationary_time = time.time()  # 로봇이 정지한 시간을 기록
-                                self.last_stationary_time = time.time()  # 로봇이 정지한 시간을 기록
 
                             self.get_logger().info(f'Publishing twist for movement: linear.x = {twist.linear.x}, angular.z = {twist.angular.z}')
                             self.cmd_vel_publisher.publish(twist)
 
                     else:
-                        self.get_logger().error('포즈 추정 실패.')
                         self.get_logger().error('포즈 추정 실패.')
 
             else:
