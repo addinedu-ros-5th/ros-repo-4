@@ -10,7 +10,7 @@ class DetectionServer(Node):
         self.publisher_ = self.create_publisher(String, 'robot_command_topic', 10)
         self.subscription = self.create_subscription(
             String,
-            'result_topic_robo_1',
+            'robo_1/detection_topic',
             self.listener_callback,
             10
         )

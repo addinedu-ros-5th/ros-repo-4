@@ -12,7 +12,7 @@ from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped
 from rclpy.executors import SingleThreadedExecutor
 from minibot_interfaces.msg import GoalPose
-
+from std_msgs.msg import String
 # class RobotState(Enum):
 #     STOP = 1
 #     MOVING = 2
@@ -23,10 +23,11 @@ class PathFollower(Node):
     def __init__(self):
         super().__init__('robot_drive_unique')
 
-        self.subscription = self.create_subscription(Path, 'planned_path_1', self.path_callback, 10)
+        self.subscription = self.create_subscription(Path, 'robo_1/planned_path', self.path_callback, 10)
         self.goal_subscription = self.create_subscription(GoalPose, 'target_pose', self.goal_callback, 10)
         self.initial_pose_publisher = self.create_publisher(PoseWithCovarianceStamped, 'initialpose', 10)
-        self.amcl_subscription = self.create_subscription(PoseWithCovarianceStamped, '/amcl_pose', self.amcl_callback, 10)
+        self.amcl_subscription = self.create_subscription(PoseWithCovarianceStamped, 'robo_1/amcl_pose', self.amcl_callback, 10)
+        self.arrive_goal_publisher = self.create_publisher(String, 'robo_1/adjust_topic', 10)
 
         self.nav = BasicNavigator()
         self.nav.waitUntilNav2Active()
@@ -127,6 +128,9 @@ class PathFollower(Node):
         result = self.nav.getResult()
         if result == TaskResult.SUCCEEDED:
             self.get_logger().info("Successfully followed all waypoints!")
+            adjust_msg = String()
+            adjust_msg.data = "ADJUSTING"
+            self.arrive_goal_publisher.publish(adjust_msg)
         else:
             self.get_logger().info(f"Failed to reach final waypoint: {result}")
 

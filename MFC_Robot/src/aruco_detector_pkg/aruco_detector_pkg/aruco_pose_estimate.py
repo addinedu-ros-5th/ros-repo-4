@@ -48,13 +48,13 @@ class ArucoCmdVelPublisher(Node):
             # result_topic을 subscribe
             self.result_subscription = self.create_subscription(
                 String,
-                'robo_1/result_topic',
+                'robo_1/robot_state',
                 self.result_callback,
                 10
             )
 
             # 조정완료 토픽 퍼블리셔
-            self.adjustment_complete_publisher = self.create_publisher(String, 'robo_1/arrive_topic', 10)
+            self.adjustment_complete_publisher = self.create_publisher(String, 'robo_1/adjust_complete', 10)
 
             self.get_logger().info('Initialization complete.')
 
@@ -151,7 +151,7 @@ class ArucoCmdVelPublisher(Node):
     def publish_adjustment_complete(self):
         self.get_logger().info('조정 완료 메시지 발행 중.')
         msg = String()
-        msg.data = "complete"
+        msg.data = "adjustment_complete"
         self.adjustment_complete_publisher.publish(msg)
         self.last_stationary_time = None  # 정지 시간을 초기화
 
