@@ -25,7 +25,10 @@ install(
   PROGRAMS src/test_amcl_subscriber.py
   PROGRAMS src/robot_state_manager_node.py 
   PROGRAMS src/robot_task_server.py                  # new    
-  PROGRAMS src/robot_task_client.py                  # new              
+  PROGRAMS src/robot_task_client.py                  # new    
+  PROGRAMS src/a_star.py                             # new 
+  PROGRAMS src/path_server.py                        # new 
+
   DESTINATION lib/${PROJECT_NAME}
   PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
               GROUP_EXECUTE GROUP_READ
@@ -37,6 +40,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/UpdateDB.srv"
   "action/RobotTask.action"                          # new
   "msg/TaskProgressUpdate.msg"                       # new
+  "msg/GoalStatus.msg"                               # new          
+  "msg/AllTaskDone.msg"                              # new
+  "msg/RackList.msg"                                 # new
 )
 
 # Install Python modules

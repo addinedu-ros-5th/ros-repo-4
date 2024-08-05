@@ -45,11 +45,6 @@
     </item>
     <item>
      <property name="text">
-      <string>수주관리</string>
-     </property>
-    </item>
-    <item>
-     <property name="text">
       <string>창고별 재고현황</string>
      </property>
      <item>
