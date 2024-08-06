@@ -45,23 +45,23 @@ topics:
   #   to_domain: 48
   #   remap: detection_result_2
 
-  /result_topic_1:
+  robo_1/adjust_topic:
     type: std_msgs/msg/String
     from_domain: 88
     to_domain: 40
-    remap: robo_1/result_topic
-  /result_topic_2:
+    remap: robo_1/adjust_topic
+  robo_2/adjust_topic:
     type: std_msgs/msg/String
     from_domain: 88
     to_domain: 48
-    remap: robo_2/result_topic
+    remap: robo_2/adjust_topic
 
-  arrive_topic_1:
+  robo_1/arrive_topic:
     type: std_msgs/msg/String
     from_domain: 40
     to_domain: 88
     remap: robo_1/arrive_topic
-  arrive_topic_2:
+  robo_2/arrive_topic:
     type: std_msgs/msg/String
     from_domain: 48
     to_domain: 88

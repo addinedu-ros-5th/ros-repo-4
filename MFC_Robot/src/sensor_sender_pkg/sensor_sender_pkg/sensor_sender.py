@@ -37,11 +37,7 @@ class SensorSender(Node):
         self.lidar_buffer = []
         
         # PC 서버 설정 (PC의 IP 주소를 사용)
-<<<<<<< HEAD
-        self.pc_ip = '172.30.1.49'  # 예: PC의 IP 주소
-=======
         self.pc_ip = '192.168.2.17'  # 예: PC의 IP 주소
->>>>>>> a4475bde205610f879fc268b10453883c5d566d8
         self.pc_port = 8080
         self.connect_to_server()
     
