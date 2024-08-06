@@ -16,7 +16,7 @@ setup(
         (os.path.join('share', package_name, 'msg'), glob('msgs/*.msg')),
         ('share/' + package_name + '/maps', glob('maps/*')),
     ],
-    install_requires=['setuptools'],
+    install_requires=['setuptools', 'robot_state'],
     zip_safe=True,
     maintainer='ys',
     maintainer_email='ysu0415@gmail.com',
@@ -28,6 +28,7 @@ setup(
             'robot_drive = lrobot.robot_drive:main',
             'robot_state_action_client_node = lrobot.robot_state_action_client:main',
             'robot_control = lrobot.robot_control:main',
+            'path_server = lrobot.path_server:main',
         ],
     },
 )

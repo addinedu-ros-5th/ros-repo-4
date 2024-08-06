@@ -14,6 +14,7 @@ from collections import deque
 from sensor_msgs.msg import LaserScan
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSDurabilityPolicy, QoSHistoryPolicy
 # from minibot_interfaces.msg import GoalPose, GoalStatus
+from robot_state.msg import TaskProgressUpdate
 
 class RobotState(Enum):
     STOP = 1
@@ -42,10 +43,10 @@ class PathFollower(Node):
         self.adjustment_complete_subscription = self.create_subscription(String, 'robo_2/adjust_complete', self.adjustment_complete_callback, 10)
         self.laser_subscription = self.create_subscription(LaserScan, 'scan', self.laser_callback, qos_profile)
         
-        self.initial_pose_publisher = self.create_publisher(PoseWithCovarianceStamped, 'initialpose', 10)
-        self.status_publisher = self.create_publisher(String, 'goal_status', 10) 
+        self.initial_pose_publisher = self.create_publisher(PoseWithCovarianceStamped, 'initialpose', 10) 
+        self.status_publisher = self.create_publisher(TaskProgressUpdate, 'task_complete', 10) 
         self.robot_state_publisher = self.create_publisher(String, 'robo_2/robot_state', 10) 
-        self.cmd_vel_publisher = self.create_publisher(Twist, 'cmd_vel', 10)
+        self.cmd_vel_publisher = self.create_publisher(Twist, 'cmd_vel', 10) 
 
         self.nav = BasicNavigator()
         self.nav.waitUntilNav2Active()
@@ -182,8 +183,8 @@ class PathFollower(Node):
     def send_next_goal_signal(self):
         self.stop_robot()
         self.set_state(RobotState.STOP)
-        status_msg = String()
-        status_msg.data = 'completed' 
+        status_msg = TaskProgressUpdate()
+        status_msg.task_complete = True
         self.status_publisher.publish(status_msg)
         self.get_logger().info("Requesting next path...")
 
