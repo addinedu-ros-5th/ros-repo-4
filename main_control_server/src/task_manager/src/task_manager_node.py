@@ -83,13 +83,13 @@ class OrderListService(Node):
             self.updateDB_client(robot_name)
 
     def updateDB_client(self,robot_name):
-        if not self.client:
+        if not self.client_update_dB:
             self.get_logger().error('Client not initialized')
             return
         request = UpdateDB.Request()
         # 'UpdateDB' 서비스 Request 메세지 타입: Robot_Name
         request.robot_name = robot_name                     # 디버깅용
-        future = self.client.call_async(request)       
+        future = self.client_update_dB.call_async(request)       
         future.add_done_callback(self.callback_response)  # 응답 콜백 설정
 
     def task_progress_callback(self, msg):                                                                        # new
@@ -293,6 +293,7 @@ class OrderListService(Node):
         # 모든 로봇 정보를 수집한 후 task allocation 요청
         self.send_task_allocation_request(self.current_task_code, self.product_code_list, "입고", self.robot_info_list)
         self.product_code_list = []  # list 초기화
+        self.robot_info_list = []# list 초기화
 
 
     def send_task_allocation_request(self, task_code, product_code_list, task_type, robot_info_list=None):

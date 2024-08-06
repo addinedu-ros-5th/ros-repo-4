@@ -15,9 +15,9 @@ class OrderList:
         # 18개의 품목 초기화
         items = [
             Item('P01', "Toothpaste", random.randint(1, 100)),
-            Item('P02', "Shampoo", random.randint(1, 100)),
+            # Item('P02', "Shampoo", random.randint(1, 100)),
             Item('P03', "Soap", random.randint(1, 100)),
-            Item('P04', "Hand Sanitizer", random.randint(1, 100)),
+            # Item('P04', "Hand Sanitizer", random.randint(1, 100)),
             Item('P05', "Laundry Detergent", random.randint(1, 100)),
             Item('P06', "Dish Soap", random.randint(1, 100)),
             Item('P07', "Paper Towels", random.randint(1, 100)),
@@ -27,16 +27,16 @@ class OrderList:
             Item('P11', "Sponges", random.randint(1, 100)),
             Item('P12', "Cleaning Spray", random.randint(1, 100)),
             Item('P13', "Batteries", random.randint(1, 100)),
-            Item('P14', "Light Bulbs", random.randint(1, 100)),
+            # Item('P14', "Light Bulbs", random.randint(1, 100)),
             Item('P15', "Umbrella", random.randint(1, 100)),
             Item('P16', "Notebook", random.randint(1, 100)),
             Item('P17', "Pen", random.randint(1, 100)),
-            Item('P18', "Basketball", random.randint(1, 100))
+            # Item('P18', "Basketball", random.randint(1, 100))
         ]
         return items
     def get_random_order_list(self):
-        # 10~18개의 랜덤 품목 선택8134610] [tf_help]: Transform data too old when converting from map to
-        num_items = random.randint(3, 4)
+        # 10~18개의 랜덤 품목 선택
+        num_items = random.randint(4, 6)
         random_items = random.sample(self.items, num_items)
         # 선택된 품목의 수량도 랜덤으로 설정
         for item in random_items:
