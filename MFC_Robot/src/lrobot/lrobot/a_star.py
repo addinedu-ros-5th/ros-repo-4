@@ -31,13 +31,13 @@ class AStarPlanner:
 
     def load_map(self):
         print("Loading map start!")
-        map_yaml_file = '/home/ys/5-ros-repo-4/lrobot/src/lrobot/maps/mfc_map.yaml'
+        map_yaml_file = '/home/mk/final_project/ros-repo-4/MFC_Robot/src/lrobot/maps/mfc_map.yaml'
         map_yaml_data = yaml.full_load(open(map_yaml_file))
 
         self.map_resolution = map_yaml_data['resolution']    # m / pixel
         self.map_origin = map_yaml_data['origin'][:2]    # list
         
-        map_pgm_file = '/home/ys/5-ros-repo-4/lrobot/src/lrobot/maps/mfc_map.pgm'
+        map_pgm_file = '/home/mk/final_project/ros-repo-4/MFC_Robot/src/lrobot/maps/mfc_map.pgm'
 
         with open(map_pgm_file, 'rb') as pgmf:
             pgm_data = pgmf.readlines()
