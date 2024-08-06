@@ -27,7 +27,7 @@ from task_manager.msg import SendLightOnResults
 LIGHT_ON_COMPLETE = False
 
 # YAML 파일 경로
-yaml_file_path = '/home/min/dev_ws/ros-repo-4/main_control_server/params/db_user_info.yaml'
+yaml_file_path = '/home/edu/dev_ws/git_ws2/ros-repo-4/main_control_server/params/db_user_info.yaml'
 
 # YAML 파일을 읽어 파라미터를 가져옴
 def load_db_params(file_path):
@@ -47,7 +47,6 @@ def get_mysql_connection():
 class UpdateRobotState():
     def __init__(self, db_instance):
         self.cursor = db_instance.cursor
-        self.conn = db_instance.conn
         self.conn = db_instance.conn
 
     # 데이터베이스에서 테이블 정보를 가져오는 함수 정의
@@ -144,33 +143,73 @@ class RobotTaskClient(Node):
 
         self.get_logger().info(f'LIGHT_ON_COMPLETE: {LIGHT_ON_COMPLETE}')
 
-    def get_result_callback(self, future):
-        result = future.result().result
-        if result.task_complete == True:
-            self.get_logger().info(f"Result task_complete(T/F): {result.task_complete}")                                # 14번 출력 
-            ### Result task_complete(T/F): {result.task_complete}  --->  Executing goal... -> Goal accepted: ) ###   
-            #---------------------------------- 여기서 다음 goal_location  보내야 함 ----------------------------------#       
+    def get_result_callback(self, msg):
+        global LIGHT_ON_COMPLETE
+
+        result = msg.status
+        if result == "completed":                                                                                       # new 0805
+            self.get_logger().info(f"Result task_complete(T/F): {result}")                                              # 14번 출력 
+            #------------------!!!!!!!!!!!! 여기서 다음 goal_location  보내야 함 !!!!!!!!!!!!------------------------#       
             self.is_current_one_done[self.num] = True
             ####################### 여기서 task_manager한테 현재 goal_location에 대해 LED 키라고 보내야 함 ##############
             self.send_task_complete_results()
-            ####################### 여기서 DB상의 'Estimated_Completion_Time'열 데이터 1 차감 #########################
-            # self.update_estimated_completion_time()
+            ####################### 여기서 DB상의 'Estimated_Completion_Time'열 데이터 1 차감 ########################
+            self.update_estimated_completion_time()                                                                     # new 0801
 
             if False in self.is_current_one_done:
-                #### send new goal_location ### 
-                self.num += 1
-                time.sleep(1)
-                #self.robot_name = "Debugging"
-                self.send_goal()
-            #------------------------------------------------------------------------------------------------------#
+                start_time = time.time()
+                timeout = 10  # 타임아웃 시간을 10초로 설정                                                                   # new 0805
+                while not LIGHT_ON_COMPLETE:
+                    if time.time() - start_time > timeout:
+                        self.get_logger().error("Timeout waiting for LIGHT_ON_COMPLETE")
+                        break
+                    time.sleep(0.1)  
+
+                if LIGHT_ON_COMPLETE:
+                    #### send that LIGHT ON SUCCEESS ### 
+                    self.num += 1
+                    light_on_msg = String()
+                    if self.robot_name == "Robo1":
+                        light_on_msg.data = "light on1"
+                        self.publisher_light_on1.publish(light_on_msg)
+                    else:
+                        light_on_msg.data = "light on2"
+                        self.publisher_light_on2.publish(light_on_msg)
+                    # time.sleep(1)
+                    # self.robot_name = "Debugging"                                                                     # new 0805
+            #-----------------------------------!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!------------------------------#
             else:
                 self.publish_result("All done")
+                ########## 여기서 task_assignment가 '입고' 였는지 '출고' 였는지에 따라 달라질 수도 ##########                      
+                if self.task_assignment == "출고":                                                                       # new 0805
+                    ############ 'OB' 지점으로 가라는 토픽 publish ########
+                    go_command = String()
+                    go_command.data = "OB"
+                    if self.robot_name == "Robo1":
+                        self.publisher_go_to_outbound1.publish(go_command)
+                    else:
+                        self.publisher_go_to_outbound2.publish(go_command)
+                else:
+                    self.get_logger().info(f"배터리 상태 확인 후 다음 명령 받기")
+                self.check_robot_state()                                                                                # new 0804
 
-    # def update_estimated_completion_time(self):
-    #     query = """
-                
-    #             """
-    #     self.update_robot_state.updateData(query)
+    ############################## 여기서 estimated_completion_time response 업데이트 ################
+    def update_estimated_completion_time(self):                                                                         # new 0801                  
+        self.get_logger().info(f"@@@@@@@@@@@@@@@@UPDATE ESTIMATED_COMPLETION_TIME@@@@@@@@@@@@@@@@")         
+        self.get_logger().info(f"Robot Name: {self.robot_name}, Rack List: {self.rack_list}")
+        
+        rack_list_str = str(self.rack_list).replace('[', '').replace(']', '').replace("'", "")  # Format Rack_List correctly
+        self.get_logger().info(f"Rack List Str: {rack_list_str}")
+        query = f"""
+                UPDATE Robot_manager
+                SET Estimated_Completion_Time = Estimated_Completion_Time - 1,
+                    Battery_Status = CONCAT(CAST(CAST(SUBSTRING(Battery_Status, 1, LENGTH(Battery_Status) - 1) AS DECIMAL(5, 2)) - 10 AS CHAR), '%')
+                WHERE Robot_Name = '{self.robot_name}'
+                    AND Rack_List = '{rack_list_str}'
+                    AND Task_Assignment = '{self.task_assignment}'
+                    AND Error_Codes = 'None';
+                """
+        self.update_robot_state.updateData(query)
 
     def send_task_complete_results(self):
         taskprogress = TaskProgressUpdate()
