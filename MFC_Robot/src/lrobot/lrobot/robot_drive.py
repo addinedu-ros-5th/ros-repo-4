@@ -5,7 +5,6 @@ import threading
 from enum import Enum
 from rclpy.node import Node
 from nav_msgs.msg import Path
-from nav_msgs.msg import Path
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped, Twist
 from rclpy.executors import MultiThreadedExecutor

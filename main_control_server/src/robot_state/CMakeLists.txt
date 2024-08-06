@@ -12,7 +12,7 @@ find_package(rclpy REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)                  # new
 find_package(network_manager REQUIRED)                # new
-find_package(robot_state REQUIRED)                    # new
+# find_package(robot_state REQUIRED)                    # new
 find_package(task_manager REQUIRED)                   # new
 
 # Install Python modules
