@@ -21,9 +21,9 @@ class InboundNode(Node):
             self.get_logger().info('Service not available, waiting again...')
         self.get_logger().info('Service available, ready to send request.')
 
-        # 'GenerateOrder' 메세지 타입의 서비스 클라이언트
+        # 'DbUpdate' 메세지 타입의 publisher
         self.publisher = self.create_publisher(DbUpdate, 'db_update_status', 10)
-
+        # 'GuiUpdate' 메세지 타입 subscriber
         self.subscription_update = self.create_subscription(
             GuiUpdate,
             'gui_update',
@@ -34,8 +34,8 @@ class InboundNode(Node):
 
         # 8시가 되면은 종이 울린다~
         self.main_window.schedule_signal.connect(self.request_inbound_list)
-        self.main_window.db_update_signal.connect(self.notify_db_update_complete)  # GUI에서 신호 연결
-
+        # GUI에서 신호 연결
+        self.main_window.db_update_signal.connect(self.notify_db_update_complete) 
 
     def request_inbound_list(self):
         if not self.client:

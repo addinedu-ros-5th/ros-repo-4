@@ -19,15 +19,10 @@ class AmclSubscriber(Node):
         self.amcl = msg
         position = self.amcl.pose.pose.position
         orientation = self.amcl.pose.pose.orientation
-        # self.get_logger().info(f'I heard: Position(x: {position.x}, y: {position.y}, z: {position.z}), '
-        #                        f'Orientation(x: {orientation.x}, y: {orientation.y}, z: {orientation.z}, w: {orientation.w})'
-        #                        )
-        # self.get_logger().info("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++=")
-        print(
-            f'I heard: Position(x: {position.x}, y: {position.y}, z: {position.z}), '
-            f'Orientation(x: {orientation.x}, y: {orientation.y}, z: {orientation.z}, w: {orientation.w})'
-        )        
-        print('("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")')
+        self.get_logger().info(f'I heard: Position(x: {position.x}, y: {position.y}, z: {position.z}), '
+                               f'Orientation(x: {orientation.x}, y: {orientation.y}, z: {orientation.z}, w: {orientation.w})'
+                               )
+        self.get_logger().info("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++=")
 
     def get_amcl_pose(self):
         return self.amcl

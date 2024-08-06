@@ -24,6 +24,7 @@ class MFCNetworkManager(Node):
         #172.30.1.77 탐탐
         #192.168.2.56 학원
         #192.168.0.21 학원2
+        #192.168.1.101 팀 공유기
         #192.168.1.100 팀 공유기
         #192.168.1.44 건대 카공
         #172.30.1.87 건대 카공
@@ -102,8 +103,6 @@ class MFCNetworkManager(Node):
             command = f'START-{task_assignment}:{rack_list}'
             self.esp32_master.send_signal(command)
             self.get_logger().info(f'Sent command to ESP32: {command}')
-
-
 
     def destroy_node(self):
         self.esp32_master.close()
