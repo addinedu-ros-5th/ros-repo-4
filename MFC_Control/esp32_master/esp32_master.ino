@@ -18,11 +18,11 @@
 // const char* password = "cll16661140";
 
 
-// const char* ssid = "Tmwlakfk_>u<";
-// const char* password = "96989898";
+const char* ssid = "Tmwlakfk_>u<";
+const char* password = "96989898";
 
-const char* ssid = "FOREST_GB_2G";
-const char* password = "forest1234";
+// const char* ssid = "FOREST_GB_2G";
+// const char* password = "forest1234";
 
 
 #define SLAVE1_ADDR 0x08
@@ -38,16 +38,16 @@ const long interval = 1000; // 1초 간격
 // String MFCNetworkManagerIP = "192.168.2.28"; // network_manager IP 주소 학원172.20.10.8
 
 // String MFCNetworkManagerIP = "172.20.10.8"; // network_manager IP 주소 학원
-// String MFCNetworkManagerIP = "192.168.1.104"; // network_manager IP 주소 학원>3<
+String MFCNetworkManagerIP = "192.168.1.104"; // network_manager IP 주소 학원>3<
 
-String MFCNetworkManagerIP = "192.168.0.11"; // network_manager IP 주소 학원>3<
+// String MFCNetworkManagerIP = "192.168.0.11"; // network_manager IP 주소 개방~
 const uint16_t networkManagerPort = 12345;
 
 
 // String slave3IP = "192.168.2.84"; // 슬레이브 3 IP 주소(ESP32 RACK LED) 학원
-// String slave3IP = "192.168.1.105"; // 슬레이브 3 IP 주소(ESP32 RACK LED) >ㅁ<
+String slave3IP = "192.168.1.106"; // 슬레이브 3 IP 주소(ESP32 RACK LED) >ㅁ<
 
-String slave3IP = "192.168.0.15"; // 슬레이브 3 IP 주소(ESP32 RACK LED)개방
+// String slave3IP = "192.168.0.15"; // 슬레이브 3 IP 주소(ESP32 RACK LED)개방
 const uint16_t slave3Port = 80; // 슬레이브 보드의 서버 포트
 
 void setup() {

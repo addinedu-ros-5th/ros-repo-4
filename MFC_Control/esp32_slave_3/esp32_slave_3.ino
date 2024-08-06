@@ -3,8 +3,8 @@
 #include <WiFiServer.h>
 #include <Adafruit_NeoPixel.h>
 
-const char* ssid = "FOREST_GB_2G";
-const char* password = "forest1234";
+const char* ssid = "Tmwlakfk_>u<";
+const char* password = "96989898";
 
 WiFiServer server(80); // 포트 80에서 서버를 시작
 
@@ -14,6 +14,7 @@ int ledPins[] = {2, 4, 22, 23, 18, 19, 21, 13, 12, 14, 27, 26, 25, 33};
 
 // 각 NeoPixel 객체를 관리하기 위한 배열
 Adafruit_NeoPixel* pixels[sizeof(ledPins) / sizeof(ledPins[0])];
+bool initialized[sizeof(ledPins) / sizeof(ledPins[0])] = {false};
 
 void setup() {
   Serial.begin(9600);
@@ -22,40 +23,13 @@ void setup() {
     delay(1000);
     Serial.println("Connecting to WiFi...");
   }
-
   Serial.println("Connected to WiFi");
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP()); // 슬레이브 IP 주소 출력
 
   server.begin(); // 서버 시작
-
-  // 각 핀에 대해 NeoPixel 객체 초기화 및 LED 상태 설정
-  for (int i = 0; i < sizeof(ledPins) / sizeof(ledPins[0]); i++) {
-    pixels[i] = new Adafruit_NeoPixel(NUMPIXELS, ledPins[i], NEO_GRB + NEO_KHZ800);
-    pixels[i]->begin();
-    pixels[i]->show(); // 초기화 상태로 LED를 꺼둠
-    Serial.print("Initialized pin "); Serial.println(ledPins[i]);
-  }
-
-  // 모든 LED를 켜기 (왼쪽 빨간색, 오른쪽 파란색)
-  for (int i = 0; i < sizeof(ledPins) / sizeof(ledPins[0]); i++) {
-    pixels[i]->setPixelColor(0, pixels[i]->Color(255, 0, 0)); // 왼쪽 LED 빨간색
-    pixels[i]->setPixelColor(1, pixels[i]->Color(0, 0, 255)); // 오른쪽 LED 파란색
-    pixels[i]->show(); // 업데이트 적용
-    Serial.print("Set color on pin "); Serial.println(ledPins[i]);
-  }
-
-  // 3초 대기
-  delay(3000);
-
-  // 모든 LED 끄기
-  for (int i = 0; i < sizeof(ledPins) / sizeof(ledPins[0]); i++) {
-    pixels[i]->setPixelColor(0, pixels[i]->Color(0, 0, 0)); // 왼쪽 LED 끄기
-    pixels[i]->setPixelColor(1, pixels[i]->Color(0, 0, 0)); // 오른쪽 LED 끄기
-    pixels[i]->show(); // 업데이트 적용
-    Serial.print("Turned off LED on pin "); Serial.println(ledPins[i]);
-  }
 }
+
 void loop() {
   // 클라이언트 요청 처리
   WiFiClient client = server.available();
@@ -75,6 +49,7 @@ void loop() {
     Serial.println("Client disconnected");
   }
 }
+
 // 명령 처리 함수
 void processCommand(String input) {
   if (input.length() < 7) {
@@ -102,6 +77,10 @@ void processCommand(String input) {
 
   int ledIndex = getLedIndex(rack);
   if (ledIndex != -1) {
+    if (!initialized[ledIndex]) {
+      initializePin(ledIndex);
+    }
+
     if (side == 'I' && action == 'S') {
       // 오른쪽 빨간 LED ON
       pixels[ledIndex]->setPixelColor(1, pixels[ledIndex]->Color(255, 0, 0));
@@ -131,7 +110,7 @@ void processCommand(String input) {
 int getLedIndex(String rack) {
   rack.trim(); // 비교 전에 공백 제거
   Serial.print("Comparing rack: "); Serial.println(rack); // 디버그용 출력
-  
+
   if (rack == "R_A1") return 0;
   if (rack == "R_A2") return -1; // 제외된 핀
   if (rack == "R_A3") return 1;
@@ -139,7 +118,7 @@ int getLedIndex(String rack) {
   if (rack == "R_B2") return 2;
   if (rack == "R_B3") return 3;
   if (rack == "R_C1") return 4;
-  if (rack == "R_C2") return 5;
+  if (rack == "R_C2") return 5;;
   if (rack == "R_C3") return 6;
   if (rack == "R_D1") return 7;
   if (rack == "R_D2") return 8;
@@ -151,4 +130,13 @@ int getLedIndex(String rack) {
   if (rack == "R_F2") return 13;
   if (rack == "R_F3") return -1; // 제외된 핀
   return -1; // 잘못된 요청
+}
+
+// 핀 초기화 함수
+void initializePin(int index) {
+  pixels[index] = new Adafruit_NeoPixel(NUMPIXELS, ledPins[index], NEO_GRB + NEO_KHZ800);
+  pixels[index]->begin();
+  pixels[index]->show(); // 초기화 상태로 LED를 꺼둠
+  Serial.print("Initialized pin "); Serial.println(ledPins[index]);
+  initialized[index] = true;
 }
