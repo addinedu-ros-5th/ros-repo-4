@@ -23,7 +23,7 @@ class ArucoCmdVelPublisher(Node):
 
         try:
             package_share_directory = get_package_share_directory('aruco_detector_pkg')
-            calib_data_path = os.path.join(package_share_directory, 'calib_data', 'MultiMatrix.npz')
+            calib_data_path = os.path.join(package_share_directory, 'calib_data', 'MultiMatrix_mk.npz')
 
             # 캘리브레이션 데이터 로드
             calib_data = np.load(calib_data_path)
@@ -52,7 +52,6 @@ class ArucoCmdVelPublisher(Node):
 
         except Exception as e:
             self.get_logger().error(f'초기화 중 오류: {e}')
-
 
     def result_callback(self, msg):
         self.result_state = msg.data
@@ -95,7 +94,15 @@ class ArucoCmdVelPublisher(Node):
                     )
 
                     if ret:
+                        # Twist 메시지 초기화
                         twist = Twist()
+                        twist.linear.x = 0.0
+                        twist.linear.y = 0.0
+                        twist.linear.z = 0.0
+                        twist.angular.x = 0.0
+                        twist.angular.y = 0.0
+                        twist.angular.z = 0.0
+
                         if not self.angle_aligned:
                             # 마커의 중심 좌표 계산
                             center_x = (marker_corner_2d[0][0] + marker_corner_2d[2][0]) / 2.0
@@ -103,16 +110,18 @@ class ArucoCmdVelPublisher(Node):
                             error_x = center_x - frame_center_x
 
                             self.get_logger().info(f'오차 x: {error_x}')
+                            self.get_logger().info(f'오차 x: {error_x}')
 
                             if abs(error_x) > 10:  # 임계값 설정
                                 # 마커의 중심이 프레임의 중심과 일치하지 않는 경우 회전
-                                twist.angular.z = -0.002 * error_x
+                                twist.angular.z = -0.02 * error_x
                                 twist.linear.x = 0.0
                             else:
                                 self.angle_aligned = True
                                 twist.angular.z = 0.0
                                 twist.linear.x = 0.0
 
+                            self.get_logger().info(f'Publishing twist for alignment: linear.x = {twist.linear.x}, angular.z = {twist.angular.z}')
                             self.cmd_vel_publisher.publish(twist)
                         else:
                             # 마커와의 거리가 20cm보다 크면 전진, 작으면 후진
@@ -129,6 +138,7 @@ class ArucoCmdVelPublisher(Node):
                                 self.angle_aligned = False
                                 self.last_stationary_time = time.time()  # 로봇이 정지한 시간을 기록
 
+                            self.get_logger().info(f'Publishing twist for movement: linear.x = {twist.linear.x}, angular.z = {twist.angular.z}')
                             self.cmd_vel_publisher.publish(twist)
 
                     else:
@@ -137,13 +147,13 @@ class ArucoCmdVelPublisher(Node):
             else:
                 self.get_logger().info('No markers detected.')
 
+
         except Exception as e:
             self.get_logger().error(f'Error in process_image: {e}')
 
         if self.last_stationary_time and (time.time() - self.last_stationary_time) >= 2:
             self.publish_adjustment_complete()
             self.result_state = "STOPPED"
-
 
     def get_marker_corners_3d(self):
         return np.array([

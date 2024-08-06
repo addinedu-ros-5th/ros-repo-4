@@ -13,13 +13,16 @@
   <build_depend>std_msgs</build_depend>
   <build_depend>nav2_simple_commander</build_depend>
   <build_depend>geometry_msgs</build_depend>
+  <build_depend>nav_msgs</build_depend>
+
 
   <exec_depend>rclpy</exec_depend>
   <exec_depend>rosidl_default_runtime</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>nav2_simple_commander</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
-  
+  <exec_depend>nav_msgs</exec_depend>
+
   <depend>task_manager</depend>
   <depend>action_msgs</depend>
   

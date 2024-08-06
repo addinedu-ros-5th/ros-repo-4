@@ -4,14 +4,9 @@ import rclpy
 from rclpy.node import Node
 from task_manager.srv import AllocatorTask
 from data.location_data import pose_dict, inbound_locations, outbound_locations, product_to_location
+from module.TSP_Algorithms import *
 import json
 
-# string task_code                # new           # "Task_2"
-# string[] product_code_list      # new           # ['P01', 'P05', 'P09']
-# string task_type
-
-## Version 1. 수정 후 버전
-# ---------------------------------------------------------------------------------------------------------------
 class TaskAllocator(Node):
     def __init__(self):
         super().__init__('task_allocator')
@@ -20,20 +15,26 @@ class TaskAllocator(Node):
 
 
     def handle_allocate_task(self, request, response):
-        self.get_logger().info(f'Received task allocation request for product: {request.product_code_list}')
+        self.get_logger().info(f'Received task allocation request for product: {request}')
         product_code_list = request.product_code_list
-        rack_list = []
+        task_code = request.task_code
 
-        for product_code in product_code_list:
-            location_key = product_to_location.get(product_code)
+        # 로봇 정보 구성
+        robots = {}
+        for i in range(len(request.robot_name)):
+            robots[request.robot_name[i]] = {
+                'battery_level': int(request.battery_status[i].replace('%', '')),
+                'status': request.status[i],
+                'total_workload': int(float(request.estimated_completion_time[i].split(',')[0])) if request.estimated_completion_time[i] else 0
 
-            if location_key is None:
-                self.get_logger().warn(f'No location found for product code {product_code}')
-                continue
-            
-            rack_list.append(location_key)
+            }
+        
+        rack_list = [product_to_location[product_code] for product_code in product_code_list]
+        
+        tasks = {task_code: product_code_list}
+        task_allocations = auction_based_task_allocation(tasks, robots) 
 
-        if not rack_list:
+        if not task_allocations:
             response.robot_name = ""
             response.task_code = request.task_code
             response.rack_list = []
@@ -46,6 +47,7 @@ class TaskAllocator(Node):
         response.rack_list = rack_list
         response.task_assignment = request.task_type
 
+        self.get_logger().info(f'Assigned task {task_code} to {allocation["robot_name"]} with racks {rack_list}')
         return response
 # ---------------------------------------------------------------------------------------------------------------
 ## Version 2. 수정 전 버전

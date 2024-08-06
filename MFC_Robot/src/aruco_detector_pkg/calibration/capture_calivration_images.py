@@ -1,9 +1,9 @@
 import cv2 as cv
 import os
 
-CHESS_BOARD_DIM = (9, 6)
+CHESS_BOARD_DIM = (7, 5)
 
-n = 31  # image_counter
+n = 13  # image_counter
 
 # checking if  images dir is exist not, if not then create images directory
 image_dir_path = "images"

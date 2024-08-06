@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'ai_server = ai_server.ai_main:main',
+            'ai_server2 = ai_server.ai_main_2:main',
             'display_result = ai_server.display_result:main',
             'result_publisher = ai_server.result_publisher:main',
             'test = ai_server.test1:main',

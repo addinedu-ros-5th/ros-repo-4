@@ -5,6 +5,7 @@ import threading
 from enum import Enum
 from rclpy.node import Node
 from nav_msgs.msg import Path
+from nav_msgs.msg import Path
 from nav2_simple_commander.robot_navigator import BasicNavigator, TaskResult
 from geometry_msgs.msg import PoseWithCovarianceStamped, PoseStamped, Twist
 from rclpy.executors import MultiThreadedExecutor
@@ -22,6 +23,7 @@ class RobotState(Enum):
     ARRIVED = 4
     GO_HOME = 5
     # TASK_DONE = 6
+
 
 class PathFollower(Node):
     def __init__(self):
@@ -78,6 +80,7 @@ class PathFollower(Node):
         pose_msg.header.frame_id = 'map'
         pose_msg.header.stamp = self.get_clock().now().to_msg()
 
+
         pose_msg.pose.pose.position.x = 0.0
         pose_msg.pose.pose.position.y = 0.0
         pose_msg.pose.pose.position.z = 0.0
@@ -86,7 +89,9 @@ class PathFollower(Node):
         pose_msg.pose.pose.orientation.z = 0.0
         pose_msg.pose.pose.orientation.w = 1.0
 
+
         pose_msg.pose.covariance = [0.0] * 36
+
 
         self.initial_pose_publisher.publish(pose_msg)
         self.get_logger().info("Published initial pose")
@@ -107,7 +112,7 @@ class PathFollower(Node):
         min_distance = 0.05
         self.obstacle_detected = any(distance < min_distance for distance in front_distances)
         if self.obstacle_detected:
-            self.get_logger().warn("Obstacle detected in front! Stopping robot.")
+            # self.get_logger().warn("Obstacle detected in front! Stopping robot.")
             self.stop_robot()
             # self.set_state(RobotState.OBSTACLE)
 
@@ -141,10 +146,10 @@ class PathFollower(Node):
         self.nav.followWaypoints(valid_poses)
 
         while not self.nav.isTaskComplete():
-            # if self.obstacle_detected:
-            #     # self.get_logger().warn("Obstacle in path, waiting for clearance.")
-            #     time.sleep(3)
-            #     continue
+            if self.obstacle_detected:
+                self.get_logger().warn("Obstacle in path, waiting for clearance.")
+                time.sleep(3)
+                continue
             
             if self.current_position is not None:
                 target_pose = valid_poses[-1].pose.position
@@ -153,8 +158,6 @@ class PathFollower(Node):
                     target_pose.y - self.current_position.y
                 )
                 self.get_logger().info(
-                    # f"Current position: ({self.current_position.x:.2f}, {self.current_position.y:.2f}), "
-                    # f"Target position: ({target_pose.x:.2f}, {target_pose.y:.2f}), "
                     f"Distance remaining to final waypoint: {remaining_distance:.2f} meters"
                 )
 
@@ -166,12 +169,9 @@ class PathFollower(Node):
 
         result = self.nav.getResult()
         if result == TaskResult.SUCCEEDED:
-            # self.get_logger().info("Successfully followed all waypoints!")
             self.set_state(RobotState.ADJUSTING)
             self.adjustment_complete_callback()
-            # 조정 완료 토픽을 받으면 send_next_goal_signal 메서드를 실행하는 조건문 추가
         else:
-            # self.get_logger().info(f"Failed to reach final waypoint: {result}")
             self.set_state(RobotState.ADJUSTING)
     
     def adjustment_complete_callback(self, msg):
@@ -196,7 +196,6 @@ class PathFollower(Node):
         stop_msg.angular.y = 0.0
         stop_msg.angular.z = 0.0
         self.cmd_vel_publisher.publish(stop_msg)
-        
         
 def main(args=None):
     rclpy.init(args=args)
