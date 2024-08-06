@@ -32,7 +32,7 @@ class TaskAllocator(Node):
         rack_list = [product_to_location[product_code] for product_code in product_code_list]
         
         tasks = {task_code: product_code_list}
-        task_allocations = auction_based_task_allocation(tasks, robots)
+        task_allocations = auction_based_task_allocation(tasks, robots) 
 
         if not task_allocations:
             response.robot_name = ""

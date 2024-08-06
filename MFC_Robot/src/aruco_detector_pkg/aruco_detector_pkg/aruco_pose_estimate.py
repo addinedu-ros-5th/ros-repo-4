@@ -34,14 +34,6 @@ class ArucoCmdVelPublisher(Node):
             self.parameters = cv.aruco.DetectorParameters()
             self.detector = cv.aruco.ArucoDetector(self.dictionary, self.parameters)
 
-            # # 이미지를 subscribe
-            # self.image_subscription = self.create_subscription(
-            #     Image,
-            #     '/camera/image_raw',
-            #     self.image_callback,
-            #     10
-            # )
-            
             # cmd_vel 퍼블리셔
             self.cmd_vel_publisher = self.create_publisher(Twist, 'base_controller/cmd_vel_unstamped', 10)
 
@@ -82,7 +74,7 @@ class ArucoCmdVelPublisher(Node):
         if self.result_state != "ADJUSTING":
             self.get_logger().info('Aruco marker detection is currently not allowed.')
             return
-        
+
         try:
             # 이미지 메시지를 OpenCV 이미지로 변환
             frame = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
@@ -102,7 +94,6 @@ class ArucoCmdVelPublisher(Node):
                     )
 
                     if ret:
-                        twist = Twist()
                         # Twist 메시지 초기화
                         twist = Twist()
                         twist.linear.x = 0.0
@@ -175,7 +166,6 @@ class ArucoCmdVelPublisher(Node):
     def publish_adjustment_complete(self):
         self.get_logger().info('조정 완료 메시지 발행 중.')
         msg = String()
-        msg.data = "adjustment_complete"
         msg.data = "adjustment_complete"
         self.adjustment_complete_publisher.publish(msg)
         self.last_stationary_time = None  # 정지 시간을 초기화

@@ -36,14 +36,14 @@ class PathFollower(Node):
             durability=QoSDurabilityPolicy.VOLATILE
         )
         
-        self.subscription = self.create_subscription(Path, 'planned_path_2', self.path_callback, 10)
+        self.subscription = self.create_subscription(Path, 'planned_path_1', self.path_callback, 10)
         self.amcl_subscription = self.create_subscription(PoseWithCovarianceStamped, '/amcl_pose', self.amcl_callback, 10)
-        self.adjustment_complete_subscription = self.create_subscription(String, 'robo_2/adjust_complete', self.adjustment_complete_callback, 10)
+        self.adjustment_complete_subscription = self.create_subscription(String, 'robo_1/adjust_complete', self.adjustment_complete_callback, 10)
         self.laser_subscription = self.create_subscription(LaserScan, 'scan', self.laser_callback, qos_profile)
         
         self.initial_pose_publisher = self.create_publisher(PoseWithCovarianceStamped, 'initialpose', 10)
         self.status_publisher = self.create_publisher(String, 'goal_status', 10) 
-        self.robot_state_publisher = self.create_publisher(String, 'robo_2/robot_state', 10) 
+        self.robot_state_publisher = self.create_publisher(String, 'robo_1/robot_state', 10) 
         self.cmd_vel_publisher = self.create_publisher(Twist, 'cmd_vel', 10)
 
         self.nav = BasicNavigator()
@@ -60,7 +60,7 @@ class PathFollower(Node):
         
         self.lock = threading.Lock()
 
-        self.front_angle_range = 15
+        self.front_angle_range = 10 
 
     def set_state(self, new_state):
         with self.lock:

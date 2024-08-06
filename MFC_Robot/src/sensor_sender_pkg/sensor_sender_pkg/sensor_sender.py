@@ -90,6 +90,7 @@ class SensorSender(Node):
         self.send_data()
 
     def send_data(self):
+
         if not self.image_buffer or not self.lidar_buffer:
             return
         
