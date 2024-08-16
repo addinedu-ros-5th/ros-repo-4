@@ -1,15 +1,44 @@
 # 도심형 풀필먼트 물류 서비스
+(기간: 2024년 07월 09일 ~ 2024년 08월 09일)
+## 1. 👨‍🏫Project Introduction👨‍🏫
+### 1-1. Background
+  <div align=center> 
+      <br/>
+      <img src="https://github.com/user-attachments/assets/643fe683-dd63-47d9-a31e-8eb710a71f28" width ="800">
+  </div>
+  
+### 1-2. Project Purpose
+  <div align=center> 
+      <br/>
+      <img src="https://github.com/user-attachments/assets/588414cf-cd6e-493a-8922-550cee1ed006" width ="800">
+  </div>
 
-## 1. Project Introduction
-### 1-1. Project Purpose
-### 1-2. Background
 ### 1-3. Technology Stack
+  <div align=center>
+      
+   |**Category**|**Details**|
+  |:----------:|:----------:|
+  |**DEV**|<img src="https://img.shields.io/badge/Ubuntu22.04-E95420?style=for-the-badge&logo=Ubuntu22.04&logoColor=white"> <img src="https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=Linux&logoColor=white"> |
+  |**TECH**|<img src="https://img.shields.io/badge/python-3776AB?style=for-the-badge&logo=python&logoColor=white"> <img src="https://img.shields.io/badge/C++-00599C?style=for-the-badge&logo=cplusplus&logoColor=white"> <img src="https://img.shields.io/badge/ROS2-22314E?style=for-the-badge&logo=ros&logoColor=white"> <img src="https://img.shields.io/badge/YOLO-512BD4?style=for-the-badge&logoColor=white"> <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logoColor=white"> <img src="https://img.shields.io/badge/PyQt5-41CD52?style=for-the-badge&logo=Qt&logoColor=white"> <img src="https://img.shields.io/badge/mysql-4479A1?style=for-the-badge&logo=mysql&logoColor=white">|
+  |**HW**|<img src="https://img.shields.io/badge/Rasberrypi4-A22846?style=for-the-badge&logo=raspberrypi&logoColor=white">  <img src="https://img.shields.io/badge/Arduino-00878F?style=for-the-badge&logo=Arduino&logoColor=white"> <img src="https://img.shields.io/badge/ESP32-4285F4?style=for-the-badge&logoColor=white">|
+  |**TOOL**|<img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=GitHub&logoColor=white"> <img src="https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=Git&logoColor=white"> <img src="https://img.shields.io/badge/Confluence-172B4D?style=for-the-badge&logo=Confluence&logoColor=white"> <br> <img src="https://img.shields.io/badge/Jira-0052CC?style=for-the-badge&logo=Jira&logoColor=white"> <img src="https://img.shields.io/badge/Slack-4A154B?style=for-the-badge&logo=Slack&logoColor=white"> <img src="https://img.shields.io/badge/Figma-F24E1E?style=for-the-badge&logo=Figma&logoColor=white"> |
+</div> 
+
 ### 1-4. Member Role
 
 ## 2. Project Design
 ### 2-1. Process Flow Chart
 * Inbound Flow
+  <div align=center> 
+      <br/>
+      <img src="https://github.com/user-attachments/assets/51fe083a-c311-44fb-98dc-525938d2381b" width ="800">
+  </div>
 * Outbound Flow
+  <div align=center> 
+      <br/>
+      <img src="https://github.com/user-attachments/assets/84abaf8a-6374-41bb-98e3-3bb80e60608e" width ="800">
+  </div>
+
 ### 2-2. HW Architecture
 ### 2-3. System Architecture
 ### 2-4. State Display
