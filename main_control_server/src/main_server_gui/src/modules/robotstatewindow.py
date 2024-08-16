@@ -29,7 +29,7 @@ map_yaml_file = os.path.join(get_package_share_directory('main_server_gui'), 'ma
 init_pos_x = 0
 init_pos_y = 0
 robot_position1 = [init_pos_x,init_pos_y]  # 로봇의 초기 위치(position_x, position_y)
-robot_position2 = [init_pos_x,init_pos_y]  # 로봇의 초기 위치(position_x, position_y)
+# robot_position2 = [init_pos_x,init_pos_y]  # 로봇의 초기 위치(position_x, position_y)
 
 def get_mysql_connection():
     try:
@@ -72,7 +72,8 @@ class RobotStateWindow(QtWidgets.QDialog):
         self.main_window = main_window
 
         self.update_robot_state = UpdateRobotState(self.db_instance)
-        self.amcl_subscriber = AmclSubscriber()
+        self.amcl_subscriber1 = AmclSubscriber()
+        #self.amcl_subscriber2 = AmclSubscriber()
         
         # 메인메뉴로 돌아가기 버튼
         self.mainButton_2.clicked.connect(self.go_to_main)
@@ -80,39 +81,40 @@ class RobotStateWindow(QtWidgets.QDialog):
         self.spin_thread_running = False
 
         self.amcl_pose_queue = queue.Queue()
-        
         self.Setup()
         self.start_spin_thread()
-
-        self.Main()
+        # 새로 고침 버튼
+        self.i = 0
+        self.resetButton.clicked.connect(self.get_data_from_table)
     
-    def Main(self):
-        # [테스트 레벨] 'Robot_manager' 테이블 데이터 업로드
+    def get_data_from_table(self):
+        # 'Robot_manager' 테이블 데이터 업로드
         self.ShowRobotTable()
-        # [테스트 레벨] 로봇 상태 버튼 창
+        # 로봇 상태 버튼 창
         self.ShowRobotBtn()
+        ## 'Inbound_Manager' 테이블 데이터 업로드
+        #self.ShowInboundTable()                                                     # new 0807
 
-        self.db_instance.disConnection()
-
-    def ShowRobotTable(self):
-        # [테스트 레벨] 'Robot_manager' 테이블 데이터 업로드
-        addlist = []
-        query = "SELECT Robot_Name, Rack_List, Status, Estimated_Completion_Time, Battery_Status, Task_Assignment, Error_Codes FROM Robot_manager;"
+    def ShowRobotTable(self):        
+        # 'Robot_manager' 테이블 데이터 업로드
+        query = "SELECT Robot_Name, Rack_List, Status, Estimated_Completion_Time, Battery_Status, Task_Assignment FROM Robot_manager;"
         robot_data = self.update_robot_state.loadDataFromDB(query)
-        for row in robot_data:
-                addlist.append(row)
         
-        print(addlist)
-        print('------------------------------------')
+        # Robot_Name을 키로 사용하여 로봇 정보를 저장할 딕셔너리 생성
+        robot_dict = {}
+        for row in robot_data:
+            robot_dict[row[0]] = row
 
-        for robotInfo in addlist:
-            Robot_Name = robotInfo[0]
+        # TableWidget 초기화
+        self.tableWidget.setRowCount(0)
+
+        # 딕셔너리의 로봇 정보로 테이블 업데이트
+        for Robot_Name, robotInfo in robot_dict.items():
             Rack_List = robotInfo[1]
             Status = robotInfo[2] 
-            Estimated_Completion_Time = robotInfo[3] 
+            Estimated_Completion_Time = robotInfo[3]
             Battery_Status = robotInfo[4]
             Task_Assignment = robotInfo[5]
-            Error_Codes = robotInfo[6]
 
             # 로그인에서 입력 받은 데이터 home.ui TableWidget에 보이기
             row = self.tableWidget.rowCount()
@@ -123,27 +125,23 @@ class RobotStateWindow(QtWidgets.QDialog):
             self.tableWidget.setItem(row, 3, QTableWidgetItem(str(Estimated_Completion_Time)))
             self.tableWidget.setItem(row, 4, QTableWidgetItem(Battery_Status))
             self.tableWidget.setItem(row, 5, QTableWidgetItem(Task_Assignment))
-            self.tableWidget.setItem(row, 6, QTableWidgetItem(Error_Codes))
-
 
     def ShowRobotBtn(self):
-        # [테스트 레벨] 로봇 상태 버튼 창
-        query = """
-            (SELECT * FROM Robot_manager WHERE Robot_Name = 'Robo1' ORDER BY Time DESC LIMIT 1)
-            UNION
-            (SELECT * FROM Robot_manager WHERE Robot_Name = 'Robo2' ORDER BY Time DESC LIMIT 1);
-        """
+        #  로봇 상태 버튼 창
+        query = "SELECT Status, Call_Num FROM Robot_manager;"
         robot_data = self.update_robot_state.loadDataFromDB(query)
-        self.robot_status_1 = robot_data[0][3]
-        self.error_codes_1 = robot_data[0][6]
-        self.robot_status_2 = robot_data[1][3]
-        self.error_codes_2 = robot_data[1][6]
+        print(f'robot_data: {robot_data}')
+        print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
+        self.robot_status_1 = robot_data[0][0]
+        self.call_num_1 = robot_data[0][1]
+        # self.robot_status_2 = robot_data[1][0]
+        # self.call_num_2 = robot_data[1][1]
 
         self.CheckStatusAndBlink()
 
     def CheckStatusAndBlink(self):
         self.setFrameColor(self.robot_status_1, self.error_codes_1, self.frame_robot1)
-        self.setFrameColor(self.robot_status_2, self.error_codes_2, self.frame_robot2)
+        # self.setFrameColor(self.robot_status_2, self.error_codes_2, self.frame_robot2)
 
     def setFrameColor(self, status, error_codes, frame):
         if error_codes not in ['None', 'Low Battery']:
@@ -230,7 +228,7 @@ class RobotStateWindow(QtWidgets.QDialog):
         self.update_map()
 
     def update_map(self):
-        global robot_position
+        global robot_position1
 
         # 기존 pixmap을 기반으로 QPixmap 생성
         updated_pixmap = QPixmap(self.map_label.pixmap())
@@ -249,11 +247,11 @@ class RobotStateWindow(QtWidgets.QDialog):
             position = amcl_1.pose.pose.position
             orientation = amcl_1.pose.pose.orientation
 
-            robot_position[0] = position.x
-            robot_position[1] = position.y
+            robot_position1[0] = position.x
+            robot_position1[1] = position.y
 
             print("It's from robotstatewindow.py")
-            print(f"Position(x: {robot_position[0]}, y: {robot_position[1]}, z: {position.z})")
+            print(f"Position(x: {robot_position1[0]}, y: {robot_position1[1]}, z: {position.z})")
             print(f'Orientation(x: {orientation.x}, y: {orientation.y}, z: {orientation.z}, w: {orientation.w})')
             print('RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR')
 
@@ -272,23 +270,27 @@ class RobotStateWindow(QtWidgets.QDialog):
         # QLabel에 업데이트된 pixmap 설정
         self.map_label.setPixmap(updated_pixmap)
 
-    def draw_robot(self, color, label, initial=False):
-        if initial:
-            x, y = self.calc_grid_position(init_pos_x, init_pos_y)      # (0,0) -> (46.1, 185.0)
-        else:
-            x, y = self.calc_grid_position(robot_position[0], robot_position[1])
+    def draw_robot(self, color, label):
+        global robot_position1
+        x, y = self.calc_grid_position(robot_position1[0], robot_position1[1])
 
         # 로봇 번호 표시
         self.painter.setPen(QPen(color, 13, Qt.SolidLine))
-        
         # x와 y를 스왑하고 y 좌표를 반전시켜서 올바른 방향으로 그리기
         self.painter.drawPoint(self.map_label.pixmap().height() - y + 190, self.map_label.pixmap().height() - x)
         self.painter.drawText(self.map_label.pixmap().height() - y +180, self.map_label.pixmap().height() - x - 10, label)
 
     def calc_grid_position(self, x, y):
+        # print("변환 전\n")
+        # print(x, y)
+        # print('**************************')
+
         pos_x = ((x - self.map_origin[0]) / self.map_resolution) * 5
         pos_y = ((y - self.map_origin[1]) / self.map_resolution) * 5
-        
+
+        # print("변환 후\n")
+        # print(pos_x, pos_y)
+
         return int(pos_x), int(pos_y)
     
     def find_map_label(self):
@@ -318,6 +320,6 @@ class RobotStateWindow(QtWidgets.QDialog):
 
     def spin_loop(self):
         while rclpy.ok():
-            rclpy.spin_once(self.amcl_subscriber)
-            amcl_1 = self.amcl_subscriber.get_amcl_pose()
-            self.amcl_pose_queue.put(amcl_1)
+            rclpy.spin_once(self.amcl_subscriber1)
+            amcl_1 = self.amcl_subscriber1.get_amcl_pose()
+            self.amcl_pose_queue1.put(amcl_1)
