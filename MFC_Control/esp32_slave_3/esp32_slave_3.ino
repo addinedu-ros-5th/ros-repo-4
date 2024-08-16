@@ -3,8 +3,8 @@
 #include <WiFiServer.h>
 #include <Adafruit_NeoPixel.h>
 
-const char* ssid = "Tmwlakfk_>u<";
-const char* password = "96989898";
+const char* ssid = "addinedu_class_2 (2.4G)";
+const char* password = "addinedu1";
 
 WiFiServer server(80); // 포트 80에서 서버를 시작
 
