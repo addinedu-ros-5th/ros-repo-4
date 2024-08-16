@@ -192,7 +192,8 @@ class OrderListService(Node):
 
     
     def get_items_to_inspect(self):
-        db_connection = Connect("root", "asdf")
+        #db_connection = Connect("root", "asdf")
+        db_connection = Connect("root", "0")
         cursor = db_connection.cursor
         cursor.execute("SELECT COUNT(*) FROM Inbound_Manager WHERE Status = '입하완료'")
         self.total_items_to_inspect = cursor.fetchone()[0]
@@ -215,7 +216,8 @@ class OrderListService(Node):
             self.get_logger().info('No more items to inspect.')
 
     def get_item_from_db(self, item_id):
-        db_connection = Connect("root", "asdf")
+        #db_connection = Connect("root", "asdf")
+        db_connection = Connect("root", "0")
         cursor = db_connection.cursor
         cursor.execute("SELECT * FROM Inbound_Manager WHERE Product_Code = %s", (item_id,))
         row = cursor.fetchone()
@@ -248,19 +250,16 @@ class OrderListService(Node):
         if (self.inspection_index < len(self.grouped_items) and self.grouped_items[self.inspection_index][0] != self.current_task_code):
             self.request_robot_info_and_allocate_task()
         
-
         # 모든 검수가 완료되었을 경우
         if self.inspected_items_count == self.total_items_to_inspect:
             self.request_robot_info_and_allocate_task()
             self.get_logger().info('All inspections complete. Sending task allocation requests.')
-
-        # else:
+        else:
         self.process_next_item()
-    
-
         
     def update_status_in_db(self, product_code, status):        
-        db_connection = Connect("root", "asdf")
+        #db_connection = Connect("root", "asdf")
+        db_connection = Connect("root", "0")
         if not db_connection.conn or not db_connection.cursor:
             self.get_logger().error("Failed to connect to the database")
             return
@@ -274,7 +273,6 @@ class OrderListService(Node):
             self.get_logger().error(f"Error: {err}")
         finally:
             db_connection.disConnection()
-
 
     def send_update_signal_to_gui(self, product_code, status):
         msg = GuiUpdate()
@@ -295,7 +293,6 @@ class OrderListService(Node):
         self.product_code_list = []  # list 초기화
         self.robot_info_list = []# list 초기화
 
-
     def send_task_allocation_request(self, task_code, product_code_list, task_type, robot_info_list=None):
         request = AllocatorTask.Request()
         request.task_code = f"Task_{task_code}"
@@ -309,12 +306,10 @@ class OrderListService(Node):
             request.status = [str(robot_info.status) for robot_info in robot_info_list]
             request.estimated_completion_time = [str(robot_info.estimated_completion_time) for robot_info in robot_info_list]
 
-
         self.future = self.task_allocator_client.call_async(request)
         self.get_logger().info(f'Sending task allocation request for task_code: task_{task_code} with product_code_list: {product_code_list}')
         self.future.add_done_callback(self.handle_task_allocation_response)
 
-    
     def handle_task_allocation_response(self, future):
         try:
             response = future.result()
@@ -337,12 +332,12 @@ class OrderListService(Node):
         
         self.get_logger().info(f'Published task assignment for robot: {robot_name}')
 
-    
 
 class Connect():
     def __init__(self, User, Password):
         self.conn = con.connect(
             # host='database-1.cdigc6umyoh0.ap-northeast-2.rds.amazonaws.com',
+            host = 'localhost',
             user=User,
             password=Password,
             database='DFC_system_db'
@@ -356,24 +351,9 @@ class Connect():
             self.cursor.close()
             self.conn = None
 
-# YAML 파일 경로
-# yaml_file_path = '/home/edu/dev_ws/git_ws2/ros-repo-4/main_control_server/params/db_user_info.yaml'
-
-current_dir = os.path.dirname(os.path.abspath(__file__))
-db_user_info_path = os.path.join(current_dir, "../../../../params/db_user_info.yaml")
-yaml_file_path = os.path.abspath(db_user_info_path)
-
-
-# YAML 파일을 읽어 파라미터를 가져옴
-def load_db_params(file_path):
-    with open(file_path, 'r') as file:
-        params = yaml.safe_load(file)
-    return params['local_db']['id'], params['local_db']['pw']
-
 def get_mysql_connection():
     try:
-        db_id, db_pw = load_db_params(yaml_file_path)
-        db_instance = Connect(db_id, db_pw)
+        db_instance = Connect("root", "0")
         return db_instance
     except con.Error as err:
         print(f"Error: {err}")
