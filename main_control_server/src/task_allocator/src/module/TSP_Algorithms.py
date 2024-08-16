@@ -75,26 +75,3 @@ def auction_based_task_allocation(tasks, robots):
             })
 
     return task_allocations
-
-
-# # 예제 작업 리스트와 로봇 상태
-# tasks = {
-#     'T1': ['P01', 'P04', 'P07'],
-#     'T2': ['P10', 'P13'],
-#     'T3': ['P16']
-# }
-
-# robots = {
-#     'Robo1': {'battery_level': 80, 'status': '대기중', 'total_workload': 0},
-#     'Robo2': {'battery_level': 50, 'status': '충전중', 'total_workload': 0},
-#     'Robo3': {'battery_level': 60, 'status': '작업중', 'total_workload': 1},
-#     'Robo4': {'battery_level': 40, 'status': '충전중', 'total_workload': 0},
-#     'Robo5': {'battery_level': 90, 'status': '대기중', 'total_workload': 0}
-# }
-
-# # 작업 할당 실행
-# allocations = auction_based_task_allocation(tasks, robots)
-
-# # 할당 결과 출력
-# for allocation in allocations:
-#     print(allocation)
