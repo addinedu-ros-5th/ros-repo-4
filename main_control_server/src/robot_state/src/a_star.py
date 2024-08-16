@@ -33,25 +33,20 @@ class AStarPlanner:
 
     def load_map(self):
         print("Loading map start!")
+        ## 절대경로
         #map_yaml_file = '/home/edu/dev_ws/git_ws2/ros-repo-4/MFC_Robot/src/minibot_navigation2/maps/mfc_map.yaml'
-        map_yaml_file = '/home/edu/dev_ws/git_ws2/ros-repo-4/MFC_Robot/src/minibot_navigation2/maps/mfc_map.yaml'
-        
-        # current_dir = os.path.dirname(os.path.abspath(__file__))
-        # map_yaml_file = os.path.join(current_dir, "../maps/mfc_map.yaml")
-        # yaml_file_path = os.path.abspath(map_yaml_file)
+        ## 상대 경로
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        map_yaml_file = os.path.join(current_dir, '../maps/mfc_map.yaml')
        
         map_yaml_data = yaml.full_load(open(map_yaml_file))
 
         self.map_resolution = map_yaml_data['resolution']    # m / pixel
         self.map_origin = map_yaml_data['origin'][:2]    # list
-        
-        #map_pgm_file = '/home/addinedu/final_project/ros-repo-4/MFC_Robot/src/lrobot/maps/mfc_map.pgm'
-        map_pgm_file = '/home/edu/dev_ws/git_ws2/ros-repo-4/MFC_Robot/src/minibot_navigation2/maps/mfc_map.pgm'
-
-        # current_dir = os.path.dirname(os.path.abspath(__file__))
-        # map_pgm_file = os.path.join(current_dir, "../maps/mfc_map.pgm")
-        # pgm_file_path = os.path.abspath(map_pgm_file)
-
+        ## 절대 경로
+        #map_pgm_file = '/home/edu/dev_ws/git_ws2/ros-repo-4/MFC_Robot/src/minibot_navigation2/maps/mfc_map.pgm'
+        ## 상대 경로
+        map_pgm_file = os.path.join(current_dir, '../maps/mfc_map.pgm')
 
         with open(map_pgm_file, 'rb') as pgmf:
             pgm_data = pgmf.readlines()
@@ -76,7 +71,6 @@ class AStarPlanner:
                                 padded_map_data[i + dy][j + dx] = 0
                                 ox.append(j + dx)
                                 oy.append(i + dy)
-
         return ox, oy
 
     class Node:
@@ -114,7 +108,6 @@ class AStarPlanner:
         print(sx_real, sy_real, gx_real, gy_real)
         print(sx, sy, gx, gy)
 
-        
         start_node = self.Node(self.calc_xy_index(sx, self.min_x),
                                self.calc_xy_index(sy, self.min_y), 0.0, -1)
         goal_node = self.Node(self.calc_xy_index(gx, self.min_x),
@@ -180,9 +173,7 @@ class AStarPlanner:
 
                 is_starting = False
 
-
         rx, ry, tpx, tpy, tvec_x, tvec_y = self.calc_final_path(goal_node, closed_set)
-
 
         # grid position to map position
         for i in range(len(tpx)):
@@ -306,6 +297,7 @@ class AStarPlanner:
         ]
         return motion
 
+############################################ 경로 생성 코드 ####################################################3
 # def visualize_map_and_path(a_star, tpx, tpy, sx, sy, gx, gy):
 #     ox, oy = a_star.load_map()
     
