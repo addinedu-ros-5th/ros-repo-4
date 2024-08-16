@@ -24,6 +24,8 @@ setup(
             'robot_state_manager_node = robot_state.robot_state_manager_node:main',
             'robot_task_client = robot_state.robot_task_client:main',                #new
             'robot_task_server = robot_state.robot_task_server:main',                #new
+            'a_star = robot_state.a_star:main',                                      #new
+            'path_server = robot_state.path_server:main'                             #new
         ],
     },
 )
