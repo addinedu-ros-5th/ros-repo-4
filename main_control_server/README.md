@@ -67,8 +67,8 @@ ros2 run task_allocator task_allocator_node.py
 ## 터미널 3
 ros2 run robot_state robot_state_manager_node.py 
 
-## 터미널 4
-ros2 run robot_state robot_task_server.py 
+## 터미널 4(예시)
+ros2 topic pub /goal_status robot_state/msg/GoalStatus "{current_rack: 'R_D1', status: 'completed'}"
 
 ## 터미널 5
 ros2 run network_manager communication_MFC_arduino.py
