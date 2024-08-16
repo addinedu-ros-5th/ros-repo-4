@@ -23,6 +23,15 @@
 </div> 
 
 ### 1-4. Member Role
+  <div align=center> 
+  
+|**구분**|**이름**|**역할**|
+|:------:|:------:|:-------|
+|팀장|채희곤|<ul><li> </li></ul>|
+|팀원|김민경|<ul><li> </li></ul>|
+|팀원|손영수|<ul><li> </li></ul>|
+|팀원|곽민기|<ul><li> </li></ul>|
+</div> 
 
 ## 2. 👨🏻‍💻Project Design👨🏻‍💻
 ### 2-1. Main Process Flow Chart
