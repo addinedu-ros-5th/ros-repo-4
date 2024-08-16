@@ -12,57 +12,55 @@ import yaml
 import threading
 import queue
 import rclpy
+import time
 from rclpy.node import Node
+from rclpy.executors import MultiThreadedExecutor
 from modules.connect import *
 from ament_index_python.packages import get_package_share_directory
-from geometry_msgs.msg import PoseWithCovarianceStamped
-
 
 # 현재 파일의 디렉토리 경로를 기준으로 network_manager/lib/network_manager 경로를 추가
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../network_manager/lib/network_manager')))
-from communication_robot_node import AmclSubscriber 
-
-# YAML 파일 경로
-# yaml_file_path = '/home/edu/dev_ws/git_ws2/ros-repo-4/main_control_server/params/db_user_info.yaml'
-
-current_dir = os.path.dirname(os.path.abspath(__file__))
-db_user_info_path = os.path.join(current_dir, "../../../../../params/db_user_info.yaml")
-yaml_file_path = os.path.abspath(db_user_info_path)
-
+from communication_robot_node import AmclSubscriber1, AmclSubscriber2 
 
 # 지도 파일 경로
-map_yaml_file = os.path.join(get_package_share_directory('main_server_gui'), 'map', 'mfc.yaml')
-#map_yaml_file = os.path.join(get_package_share_directory('main_server_gui'), 'map', 'map_hg.yaml')
+map_yaml_file = os.path.join(get_package_share_directory('main_server_gui'), 'map', 'mfc_map.yaml')
 
 # 전역 변수 설정
 init_pos_x = 0
 init_pos_y = 0
-robot_position = [init_pos_x,init_pos_y]  # 로봇의 초기 위치(position_x, position_y)
-
-# YAML 파일을 읽어 파라미터를 가져옴
-def load_db_params(file_path):
-    with open(file_path, 'r') as file:
-        params = yaml.safe_load(file)
-    return params['local_db']['id'], params['local_db']['pw']
+robot_position1 = [init_pos_x,init_pos_y]  # 로봇의 초기 위치(position_x, position_y)
+robot_position2 = [init_pos_x,init_pos_y]  # 로봇의 초기 위치(position_x, position_y)
 
 def get_mysql_connection():
     try:
-        db_id, db_pw = load_db_params(yaml_file_path)
-        db_instance = Connect(db_id, db_pw)
+        db_instance = Connect("root", "0")                                 # new 0807
         return db_instance
     except con.Error as err:
         print(f"Error: {err}")
-        return None
-    
+        return None    
+
 class UpdateRobotState():
     def __init__(self, db_instance):
         self.cursor = db_instance.cursor
+        self.conn = db_instance.conn
 
+        if not self.conn or not self.cursor:
+            self.get_logger().error("Failed to connect to the database")
+            return
+    
     # 데이터베이스에서 테이블 정보를 가져오는 함수 정의
-    def loadDataFromDB(self, query):
+    def fetchDataQuery(self, query):
         self.cursor.execute(query)
-        robot_data = self.cursor.fetchall()
+
+        return self.cursor.fetchall()
+
+    def loadDataFromDB(self, query):
+        robot_data = self.fetchDataQuery(query)
         return robot_data
+    
+    def updateData(self, query):
+        self.cursor.execute(query)
+        self.conn.commit()
     
 class RobotStateWindow(QtWidgets.QDialog):
     def __init__(self, main_window):
@@ -222,7 +220,6 @@ class RobotStateWindow(QtWidgets.QDialog):
         self.painter = QPainter(translated_pixmap)
         move_x = 0      
         move_y = 0      
-        #self.painter.drawPixmap(-move_x, -move_y, rotated_pixmap)  # x 좌표를 -로 설정하여 왼쪽으로 이동
         self.painter.drawPixmap(move_x, -move_y, rotated_pixmap)    # x 좌표를 -로 설정하여 왼쪽으로 이동
         self.painter.end()
         
@@ -281,30 +278,17 @@ class RobotStateWindow(QtWidgets.QDialog):
         else:
             x, y = self.calc_grid_position(robot_position[0], robot_position[1])
 
-        # # 로봇 번호 표시
-        # self.font = QFont()
-        # self.font.setBold(True)
-        # self.font.setPointSize(13)
-        # self.painter.setFont(self.font)
+        # 로봇 번호 표시
         self.painter.setPen(QPen(color, 13, Qt.SolidLine))
-        # self.painter.drawPoint(x+190, y)
-        # self.painter.drawText(x+180, y-10, label)
+        
         # x와 y를 스왑하고 y 좌표를 반전시켜서 올바른 방향으로 그리기
         self.painter.drawPoint(self.map_label.pixmap().height() - y + 190, self.map_label.pixmap().height() - x)
         self.painter.drawText(self.map_label.pixmap().height() - y +180, self.map_label.pixmap().height() - x - 10, label)
-        # self.painter.drawPoint(int((self.width - x) * self.image_scale), int(y * self.image_scale))
 
     def calc_grid_position(self, x, y):
-        # print("변환 전\n")
-        # print(x, y)
-        # print('**************************')
-
         pos_x = ((x - self.map_origin[0]) / self.map_resolution) * 5
         pos_y = ((y - self.map_origin[1]) / self.map_resolution) * 5
-
-        # print("변환 후\n")
-        # print(pos_x, pos_y)
-
+        
         return int(pos_x), int(pos_y)
     
     def find_map_label(self):
