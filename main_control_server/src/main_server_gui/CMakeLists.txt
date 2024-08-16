@@ -19,8 +19,11 @@ install(
 # Install Python scripts
 install(
   PROGRAMS src/main_server_gui.py
+  PROGRAMS src/test2.py                                        # new
+  PROGRAMS src/test3.py                                        # new
   PROGRAMS ../network_manager/src/communication_robot_node.py  # new
   PROGRAMS ../network_manager/src/communication_MFC_arduino.py # new
+  
   DESTINATION lib/${PROJECT_NAME}
   PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
               GROUP_EXECUTE GROUP_READ
