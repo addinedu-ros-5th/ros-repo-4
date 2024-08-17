@@ -1,0 +1,19 @@
+# Request
+string robot_name
+---
+# Response
+string robot_name
+string battery_status
+string status
+float32 estimated_completion_time
+
+
+#Response 추가 요청
+
+# Response
+# string robot_name
+# string battery_status
+# string status
+
+# string current_location  좌표
+# float32 estimated_completion_time   계산 가능하다면? 
