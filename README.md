@@ -155,12 +155,12 @@
    ```
 5. Docker 컨테이너에서 Ultralytics 실행
     ```
-  docker run --gpus all --network host \
-  -v /ros-repo-4/AI_Server/src/ai_server/:/ros2_ws/src/ai_server \
-  -v /tmp/.X11-unix:/tmp/.X11-unix \
-  -e DISPLAY=:0 \
-  -e ROS_DISTRO=humble \
-  -it my_ros2_yolov5:latest /bin/bash
+    docker run --gpus all --network host \
+    -v /ros-repo-4/AI_Server/src/ai_server/:/ros2_ws/src/ai_server \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
+    -e DISPLAY=:0 \
+    -e ROS_DISTRO=humble \
+    -it my_ros2_yolov5:latest /bin/bash
     ```
 ### :warning:AWS RDS 상 DB 정보 로컬에 저장:warning:
 0. AWS RDS 상 데이터베이스 백업
