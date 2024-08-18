@@ -141,24 +141,26 @@
     ```
     $ docker info | grep -i runtime
     ```
-3. Ultralytics Docker 이미지 설치
+3. 작성된 Dockerfile을 사용해 Docker 이미지를 빌드.
     ```
-    # Set image name as a variable
-    $ t=ultralytics/ultralytics:latest
+    # 터미널을 열고 Dockerfile이 있는 디렉토리로 이동.
+    cd docker
 
-    # Pull the latest Ultralytics image from Docker Hub
-    $ sudo docker pull $t
+    # Docker 이미지를 빌드
+    docker build -t my_ros2_yolov5:latest .
     ```
-4. Docker 컨테이너에서 Ultralytics 실행
+4. Docker 컨테이너 X 서버에 접근
+   ```
+   xhost +local:docker
+   ```
+5. Docker 컨테이너에서 Ultralytics 실행
     ```
-    # 로컬 PC 내 모델 작업경로를 Docker 내 작업경로에 공유
-    $ t=ultralytics/ultralytics:latest
-    $ docker run -it --ipc=host --gpus all -v '로컬 PC 모델 작업경로':'Docker 작업경로' $t
-
-    # 예시) Docker 내 작업경로에서 실행
-    $ t=ultralytics/ultralytics:latest
-    $ docker run -it --ipc=host --gpus all -v /home/edu/dev_ws/YOLOv5:/workspace $t
-    root@7178de4f531f:/workspace/yolov5# python3 detect.py --weights yolov5s.pt --img 640 --conf 0.25 --source data/images --name exp2 --exist-ok
+  docker run --gpus all --network host \
+  -v /ros-repo-4/AI_Server/src/ai_server/:/ros2_ws/src/ai_server \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  -e DISPLAY=:0 \
+  -e ROS_DISTRO=humble \
+  -it my_ros2_yolov5:latest /bin/bash
     ```
 ### :warning:AWS RDS 상 DB 정보 로컬에 저장:warning:
 0. AWS RDS 상 데이터베이스 백업
