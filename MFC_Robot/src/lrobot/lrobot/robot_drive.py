@@ -114,22 +114,7 @@ class PathFollower(Node):
             self.current_position = msg.pose.pose.position
             self.current_orientation = msg.pose.pose.orientation
 
-    # def laser_callback(self, msg):
-    #     angle_increment = msg.angle_increment 
-    #     num_angles = len(msg.ranges) 
-    #     mid_index = num_angles // 2 
-    #     half_front_range = int((self.front_angle_range / 360) * num_angles / 2)
-
-    #     front_distances = msg.ranges[mid_index - half_front_range: mid_index + half_front_range]
-
-    #     min_distance = 0.05
-    #     self.obstacle_detected = any(distance < min_distance for distance in front_distances)
-    #     if self.obstacle_detected:
-    #         # self.get_logger().warn("Obstacle detected in front! Stopping robot.")
-    #         self.stop_robot()
-    #         # self.set_state(RobotState.OBSTACLE)
     def laser_callback(self, msg):
-        # Log LIDAR data without triggering obstacle avoidance
         angle_increment = msg.angle_increment 
         num_angles = len(msg.ranges) 
         mid_index = num_angles // 2 
@@ -137,9 +122,12 @@ class PathFollower(Node):
 
         front_distances = msg.ranges[mid_index - half_front_range: mid_index + half_front_range]
 
-        # Log the minimum distance found in the front range
-        min_distance = min(front_distances)
-        # self.get_logger().info(f"Minimum distance in front: {min_distance:.2f} meters")
+        min_distance = 0.05
+        self.obstacle_detected = any(distance < min_distance for distance in front_distances)
+        if self.obstacle_detected:
+            # self.get_logger().warn("Obstacle detected in front! Stopping robot.")
+            self.stop_robot()
+            # self.set_state(RobotState.OBSTACLE)
 
     # def laser_callback(self, msg):
     #     if self.state != (RobotState.ARRIVED or RobotState.STOP):
